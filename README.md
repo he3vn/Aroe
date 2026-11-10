@@ -74,10 +74,4 @@ Endpoint details and gotchas live in `docs/API-NOTES.md`.
 - Scraping MyAnimeList's website directly. The APIs exist; use them.
 - A web or desktop UI before the terminal version works.
 
-## Reference
 
-The recommendation style being aimed for:
-<https://anime.ameo.dev/interactive-recommender>
-
-That one builds a weighted taste profile from your scores instead of only
-matching genres. Worth reading once the basic version works.
