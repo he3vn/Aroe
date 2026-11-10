@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# cached API data (regenerate it, don't commit it)
+data/*
+!data/.gitkeep
+
+# secrets, just in case
+.env
+.env.*
+
+# build output
+dist/
+build/
+
+# macOS
+.DS_Store
+
+# logs
+*.log
+npm-debug.log*

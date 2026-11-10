@@ -1,0 +1,7 @@
+{
+  "name": "anime-recommender",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Terminal anime recommender. Logic written by hand, GUI later.",
+  "type": "module"
+}
