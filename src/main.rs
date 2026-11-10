@@ -19,7 +19,7 @@ fn main() {
 
     let name = ask("Are you new to anime?(Yes/No): ");
 
-    // Lets start the logic this is going to be longgg
+    // Lets start the logic this is going to be long I js realised i need to scrape a crazy amount of stuff to make this
     if name == "Yes" {
         let genre = ask(
             "What genre do you like?:\n\
