@@ -1,5 +1,5 @@
-# dependencies
-node_modules/
+# build output
+/target
 
 # cached API data (regenerate it, don't commit it)
 data/*
@@ -9,13 +9,10 @@ data/*
 .env
 .env.*
 
-# build output
-dist/
-build/
-
-# macOS
+# editors / OS
 .DS_Store
+.idea/
+.vscode/
 
 # logs
 *.log
-npm-debug.log*
