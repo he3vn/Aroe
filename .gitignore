@@ -4,6 +4,7 @@
 # cached API data (regenerate it, don't commit it)
 data/*
 !data/.gitkeep
+cache/
 
 # secrets, just in case
 .env

@@ -1,7 +1,7 @@
 mod data;
 
 use inquire::Select;
-use std::io::{self, Write};
+use std::{io::{self, Write}, time::Duration};
 
 // This is basically my new input= for rust since they dont have it
 fn ask(prompt: &str) -> String {
@@ -20,6 +20,72 @@ fn main() {
     println!("  Your anime recommender");
     println!("{}", "-".repeat(30));
 
+    let action=vec![
+        "Jujutsu Kaisen",
+        "Frieren",
+        "Attack on Titan",
+        "Fullmetal Alchemist: Brotherhood",
+        "One piece",
+        "Bleach",
+        "Hunter X Hunter",
+        "Cowboy Bebop",
+        "Vinland Saga",
+        "Dragon ball",
+        "Naruto",
+        "Berserk",
+        "Code geass",
+        "One punch man",
+        "Gintama",
+        "Kingdom",
+        "Demon Slayer",
+        "Neone Genesis Evangelion",
+        "Mob psycho 100",
+        "Ghost in the shell",
+        "Solo leveling",
+        "Ranking of kings",
+        "Saint Seya",
+        "InuYusha",
+        "Chainsaw Man",
+        "Kaiju n.8",
+        "Spy x family",
+        "Dragon ball Super",
+        "Made in Abyss",
+        "Gurren laggan",
+        "Parasyte",
+        "My hero academia",
+        "86",
+        "Black clover",
+        "Fate/Zero",
+        "Yu-Gi-Oh",
+        "Dragon ball Daima",
+        "Dr.Stone",
+        "Hell's Paradise",
+        "Tensura(That Time I got reincarnated as a slime)",
+        "The promised Neverland",
+        "Doredoro",
+        "Banana Fish",
+        "Ranma 1/2",
+        "Golden Kamuy",
+        "Bakemonogatari",
+        "Claymore",
+        "Yona of the Dawn",
+        "Mobile Suit Gundan Wing",
+        "Shaman King",
+        "Lupin the Third",
+        "Fairy Tail",
+        "Black Lagoon",
+        "Digimon Adventure",
+        "Assasination Classroom",
+        "Elfen lied",
+        "Tokyo Revengers",
+        "Akame ga Kill",
+        "Bungo Stray Dogs",
+        "Kill la kill",
+        "Re:zero",
+    ];
+
+
+
     // Load catalog from database
     let anime_catalog = data::catalog("data.json");
 
@@ -34,11 +100,17 @@ fn main() {
              3. Slice of Life(Vibe/Relax)\n\
              4. Fantasy\n\
              5. Romance\n\
-             Enter choice: ",
+        so     Enter choice: ",
         );
 
         if genre == "1" || genre.eq_ignore_ascii_case("Action") {
-            println!("Recommended: Attack on Titan!");
+            let nanos= std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .subsec_nanos() as usize;
+            
+            let pick=action[nanos % action.len()];
+            println!("Recommended: {}",pick);
         } else if genre == "2" || genre.eq_ignore_ascii_case("Mystery") {
             println!("Recommended: Death Note!");
         } else if genre == "3" || genre.eq_ignore_ascii_case("Slice of Life") {
@@ -83,6 +155,29 @@ fn main() {
                         println!("Tags: {}", anime.genres.join(", "));
                     }
                     println!("{}", "=".repeat(30));
+
+                    match data::details(anime) {
+                        Some(details) => {
+                            if details.synopsis.is_empty() {
+                                println!("Synopsis: Not available");
+                            } else {
+                                println!("\nSynopsis:\n{}", details.synopsis);
+                            }
+
+                            if details.streams.is_empty() {
+                                println!("\nWhere to watch: Not available");
+                            } else {
+                                println!("\nWhere to watch:");
+                                for (site, url) in &details.streams {
+                                    println!("  {} — {}", site, url);
+                                }
+                            }
+                        }
+                        None => {
+                            println!("\nSynopsis: Not available");
+                            println!("Where to watch: Not available");
+                        }
+                    }
                 }
             }
             Err(_) => {
