@@ -1,77 +1,110 @@
-# AnimeRO
+# aroe
 
-An anime recommender. Tell it what you've watched, and it tells you what to
-watch next based on your current tastes. If you haven't watched anything yet, it
-gives you a few good starting points instead.
+<p align="center">
+  <img src="logo.jpeg" alt="aroe" width="100" />
+</p>
 
-Terminal app, written in Rust. GUI maybe later, once the terminal version is
-actually fun to use.
+<p align="center">
+  <a href="https://github.com/he3vn/Aroe">github</a> · <a href="#install">install</a> · <a href="#usage">usage</a> · <a href="#how-it-works">how it works</a>
+</p>
+
+<p align="center">
+  English · <a href="README.fr.md">Français</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-666666?labelColor=333333" alt="MIT license" /></a>
+  <a href="https://github.com/he3vn/Aroe"><img src="https://img.shields.io/github/downloads/he3vn/Aroe/total?labelColor=333333&color=666666" alt="total GitHub release downloads" /></a>
+  <a href="https://github.com/he3vn/Aroe/stargazers"><img src="https://img.shields.io/github/stars/he3vn/Aroe?labelColor=333333&color=666666&logo=github" alt="GitHub stars" /></a>
+  <a href="https://github.com/he3vn/Aroe/releases/latest"><img src="https://img.shields.io/github/v/release/he3vn/Aroe?label=release&labelColor=333333&color=666666" alt="latest stable release" /></a>
+  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/built%20with-Rust-000000?logo=rust&labelColor=333333&color=666666" alt="built with Rust" /></a>
+</p>
 
 ---
 
-## What it will do
+<p align="center">
+  <img src="https://picsum.photos/seed/aroe/1200/500" alt="a random placeholder image" />
+</p>
 
-**If you've watched some anime**
+**the anime recommender that lives in your terminal.**
 
-- You type in titles you've seen, optionally with a score out of 10.
-- It looks each one up in an anime catalog and remembers it locally.
-- It builds a rough taste profile from those shows: which genres and themes you
-  lean toward, what era you like, TV vs movie, how highly you rated things.
-- It scores the rest of the catalog against that profile, drops anything you've
-  already seen, and prints the top matches.
-- Every result says *why* it showed up — shared genres, similar year, similar
-  rating — so the list isn't a black box.
+- **start from your taste** — tell it what you've watched, optionally with a score out of 10. aroe turns that into a taste profile: favourite genres and themes, the era you like, TV or movie, and how highly you rate things.
+- **every pick has a reason** — recommendations explain themselves with shared genres, a similar year, or a similar rating. no black box.
+- **new to anime?** — no quiz. pick a vibe (action, romance, something short…) and get a handful of beginner-friendly shows instead of a thousand-row list.
+- **drops what you've seen** — already watched titles are filtered out, along with anything outside the year, type or episode limits you set.
+- **cache, not spam** — catalog data is saved locally, so reruns are instant and the public APIs don't get hammered.
+- **one rust binary, no electron** — runs in whatever terminal you already use.
 
-**If you're new**
+> aroe is early. catalog search works today; the recommender is being built in the open. see [roadmap](#roadmap).
 
-- No quiz. It gives you a handful of widely liked, beginner-friendly shows
-  instead of a thousand-row list.
-- Optionally you pick a vibe first (action, romance, something short, etc.).
+---
 
-## How it works, in plain English
+## install
 
-1. **Lookup** — turn a typed title into a real catalog entry: id, genres, year,
-   episode count, score, popularity.
-2. **Cache** — save what it fetched into `data/` so the next run is instant and
-   the APIs don't get hammered.
-3. **Profile** — turn your watched list into weighted preferences. A show you
-   rated 9/10 counts more than one you rated 6/10.
-4. **Score** — compare every candidate against that profile. Shared genres and
-   themes carry the most weight; year and format break ties.
-5. **Filter** — remove anything already watched, plus anything outside the
-   limits you set (year, type, episode count).
-6. **Present** — top N results, formatted for a terminal, each with a reason.
+```bash
+git clone https://github.com/he3vn/Aroe
+cd Aroe
+cargo build --release
+```
 
-## Where the data comes from
+then run it:
 
-| Source | What it's for | Key needed |
+```bash
+cargo run --release
+```
+
+## usage
+
+aroe asks two things:
+
+- **are you new to anime?** if yes, pick a vibe and it suggests a starting point.
+- **if not**, start typing a title and pick from the catalog. it shows the type, episodes, year and tags of what you chose.
+
+## how it works
+
+1. **lookup** — turn a typed title into a real catalog entry: id, genres, year, episode count, score, popularity.
+2. **cache** — save what it fetched into `data/` so the next run is instant.
+3. **profile** — turn your watched list into weighted preferences. a show you rated 9/10 counts more than one you rated 6/10.
+4. **score** — compare every candidate against that profile. shared genres and themes carry the most weight; year and format break ties.
+5. **filter** — remove anything already watched, plus anything outside the limits you set.
+6. **present** — top N results, formatted for a terminal, each with a reason.
+
+## where the data comes from
+
+| source | what it's for | key needed |
 |---|---|---|
-| MyAnimeList (via Jikan v4) | main catalog: titles, genres, year, score | No |
-| AniList (GraphQL) | second catalog, better bulk queries, its own similar lists | No |
+| MyAnimeList (via Jikan v4) | main catalog: titles, genres, year, score | no |
+| AniList (GraphQL) | second catalog, better bulk queries, its own similar lists | no |
 
-Both are free and public. Neither is first-party for this app, so requests are
-rate-limited — which is the whole reason the cache exists.
+both are free and public. neither is first-party for this app, so requests are rate-limited — which is the whole reason the cache exists.
 
-Endpoint details and gotchas live in `docs/API-NOTES.md`.
+## roadmap
 
-## Planned, roughly in order
+- [x] search a title from the catalog
+- [x] "i'm new" mode with starter picks
+- [ ] cache lookups so reruns don't refetch
+- [ ] score two anime against each other
+- [ ] recommend from your watched list
+- [ ] show the reason behind each recommendation
+- [ ] add AniList as a second source
+- [ ] save your watched list between runs
+- [ ] GUI, if the terminal version earns it
 
-1. Search one title and print the raw result. Nothing else.
-2. Cache results so reruns don't refetch.
-3. Format a single result so it's readable.
-4. Score two anime against each other and sanity-check the number.
-5. Recommend from a list of known anime.
-6. "I'm new" mode with starter picks.
-7. Show the reason behind each recommendation.
-8. Add AniList as a second source.
-9. Save your watched list between runs.
-10. GUI, if the terminal version earns it.
+## not planned for now
 
-## Not planned for now
+- logging into your MAL/AniList account. reading a real user list needs OAuth, which is a separate project.
+- scraping MyAnimeList's website directly. the APIs exist; use them.
+- a web or desktop UI before the terminal version works.
 
-- Logging into your MAL/AniList account. Reading a real user list needs OAuth,
-  which is a separate project.
-- Scraping MyAnimeList's website directly. The APIs exist; use them.
-- A web or desktop UI before the terminal version works.
+## development
 
+```bash
+git clone https://github.com/he3vn/Aroe
+cd Aroe
+cargo build
+cargo run
+```
 
+## license
+
+aroe is licensed under the [MIT License](LICENSE).
