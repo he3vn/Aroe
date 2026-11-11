@@ -1,4 +1,4 @@
-# AnimeRO
+# Aroe
 
 An anime recommender. Tell it what you've watched, and it tells you what to
 watch next based on your current tastes. If you haven't watched anything yet, it
