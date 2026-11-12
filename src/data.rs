@@ -1,7 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::time::{SystemTime, UNIX_EPOCH};
-use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 struct Database {
@@ -27,6 +27,7 @@ struct Season {
     year: Option<u32>,
 }
 
+#[allow(dead_code)]
 pub struct Anime {
     pub mal_id: u32,
     pub anilist_id: Option<u32>,
@@ -41,7 +42,7 @@ pub struct Anime {
 fn mal_id_from_sources(sources: &[String]) -> Option<u32> {
     for url in sources {
         if url.contains("myanimelist.net/anime/") {
-            let id = url.rsplit("/").next()?;
+            let id = url.rsplit('/').next()?;
             return id.parse().ok();
         }
     }
@@ -93,6 +94,7 @@ pub fn catalog(path: &str) -> Vec<Anime> {
         .collect()
 }
 
+#[allow(dead_code)]
 pub fn by_genre(catalog: &[Anime]) -> HashMap<String, Vec<&Anime>> {
     let mut map: HashMap<String, Vec<&Anime>> = HashMap::new();
     for anime in catalog {
@@ -103,6 +105,7 @@ pub fn by_genre(catalog: &[Anime]) -> HashMap<String, Vec<&Anime>> {
     map
 }
 
+#[allow(dead_code)]
 pub fn by_kind<'a>(catalog: &'a [Anime], kind: &str) -> Vec<&'a Anime> {
     catalog.iter().filter(|a| a.kind == kind).collect()
 }
@@ -243,6 +246,24 @@ fn save_cache(cache: &HashMap<String, Details>) {
     }
 }
 
+fn details_from_media(media: AniListMedia) -> Details {
+    let synopsis = clean_description(media.description.as_deref().unwrap_or(""));
+
+    let streams = media
+        .external_links
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|link| link.kind.as_deref() == Some("STREAMING"))
+        .map(|link| (link.site, link.url))
+        .collect();
+
+    Details {
+        synopsis,
+        streams,
+        fetched_at: now(),
+    }
+}
+
 fn fetch_details(anime: &Anime) -> Option<Details> {
     let mut media = None;
 
@@ -286,22 +307,7 @@ fn fetch_details(anime: &Anime) -> Option<Details> {
     }
 
     let media = media?;
-
-    let synopsis = clean_description(media.description.as_deref().unwrap_or(""));
-
-    let streams = media
-        .external_links
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|link| link.kind.as_deref() == Some("STREAMING"))
-        .map(|link| (link.site, link.url))
-        .collect();
-
-    Some(Details {
-        synopsis,
-        streams,
-        fetched_at: now(),
-    })
+    Some(details_from_media(media))
 }
 
 pub fn details(anime: &Anime) -> Option<Details> {
@@ -315,6 +321,32 @@ pub fn details(anime: &Anime) -> Option<Details> {
     }
 
     let fresh = fetch_details(anime)?;
+    cache.insert(key, fresh.clone());
+    save_cache(&cache);
+
+    Some(fresh)
+}
+
+/// Used when a title isn't in the local database: search AniList by name.
+pub fn details_by_title(title: &str) -> Option<Details> {
+    let key = format!("title:{}", normalize_title(title));
+    let mut cache = load_cache();
+
+    if let Some(cached) = cache.get(&key) {
+        if now().saturating_sub(cached.fetched_at) < CACHE_MAX_AGE_SECS {
+            return Some(cached.clone());
+        }
+    }
+
+    let media = post_graphql(serde_json::json!({
+        "query": format!(
+            "query($search:String){{ Media(search:$search, type:ANIME) {{ {} }} }}",
+            MEDIA_FIELDS
+        ),
+        "variables": { "search": title }
+    }))?;
+
+    let fresh = details_from_media(media);
     cache.insert(key, fresh.clone());
     save_cache(&cache);
 

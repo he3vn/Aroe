@@ -2,14 +2,149 @@ mod data;
 
 use inquire::Select;
 use std::io::{self, Write};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-// This is basically my new input= for rust since they dont have it
 fn ask(prompt: &str) -> String {
     print!("{}", prompt);
     io::stdout().flush().unwrap();
     let mut buf = String::new();
     io::stdin().read_line(&mut buf).unwrap();
     buf.trim().to_string()
+}
+
+struct Rng(u64);
+
+impl Rng {
+    fn new() -> Self {
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(0);
+        // xorshift must never start at 0
+        Rng((seed ^ 0x9E37_79B9_7F4A_7C15) | 1)
+    }
+
+    fn next(&mut self) -> u64 {
+        let mut x = self.0;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        self.0 = x;
+        x
+    }
+
+    fn below(&mut self, n: usize) -> usize {
+        if n == 0 {
+            0
+        } else {
+            (self.next() % n as u64) as usize
+        }
+    }
+}
+
+fn pick_unique(rng: &mut Rng, list: &[&str], count: usize, shown: &[String]) -> Vec<String> {
+    let mut picks: Vec<String> = Vec::new();
+
+    if list.is_empty() {
+        return picks;
+    }
+
+    let mut tries = 0;
+    while picks.len() < count && tries < count * 50 {
+        tries += 1;
+        let candidate = list[rng.below(list.len())];
+
+        let already_shown = shown.iter().any(|s| s.eq_ignore_ascii_case(candidate));
+        let already_picked = picks.iter().any(|s| s.eq_ignore_ascii_case(candidate));
+
+        if !already_shown && !already_picked {
+            picks.push(candidate.to_string());
+        }
+    }
+
+    picks
+}
+
+fn norm(s: &str) -> String {
+    s.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
+fn find_anime<'a>(catalog: &'a [data::Anime], wanted: &str) -> Option<&'a data::Anime> {
+    // 1. exact, ignoring case
+    if let Some(a) = catalog.iter().find(|a| a.title.eq_ignore_ascii_case(wanted)) {
+        return Some(a);
+    }
+
+    let want = norm(wanted);
+    if want.is_empty() {
+        return None;
+    }
+
+    // 2. exact after normalizing punctuation/spacing
+    if let Some(a) = catalog.iter().find(|a| norm(&a.title) == want) {
+        return Some(a);
+    }
+
+    // 3. loose "contains" match (only for reasonably long queries)
+    if want.len() >= 5 {
+        return catalog.iter().find(|a| norm(&a.title).contains(&want));
+    }
+
+    None
+}
+
+fn print_details(details: Option<data::Details>) {
+    match details {
+        Some(details) => {
+            if details.synopsis.is_empty() {
+                println!("\nSynopsis: Not available");
+            } else {
+                println!("\nSynopsis:\n{}", details.synopsis);
+            }
+
+            if details.streams.is_empty() {
+                println!("\nWhere to watch: Not available");
+            } else {
+                println!("\nWhere to watch:");
+                for (site, url) in &details.streams {
+                    println!("  {} — {}", site, url);
+                }
+            }
+        }
+        None => {
+            println!("\nSynopsis: Not available");
+            println!("Where to watch: Not available");
+        }
+    }
+}
+
+fn show(title: &str, catalog: &[data::Anime]) {
+    match find_anime(catalog, title) {
+        Some(anime) => {
+            println!("\n{}", "=".repeat(30));
+            println!("Title: {}", anime.title);
+            println!("Type: {}", anime.kind);
+            if let Some(eps) = anime.episodes {
+                println!("Episodes: {}", eps);
+            }
+            if let Some(year) = anime.year {
+                println!("Year: {}", year);
+            }
+            println!("{}", "=".repeat(30));
+
+            print_details(data::details(anime));
+        }
+        None => {
+            println!("\n{}", "=".repeat(30));
+            println!("Title: {}", title);
+            println!("{}", "=".repeat(30));
+
+            print_details(data::details_by_title(title));
+        }
+    }
 }
 
 fn main() {
@@ -20,144 +155,146 @@ fn main() {
     println!("  Your anime recommender");
     println!("{}", "-".repeat(30));
 
-    let action=vec![
+    let action = vec![
         "Jujutsu Kaisen",
         "Frieren",
         "Attack on Titan",
         "Fullmetal Alchemist: Brotherhood",
-        "One piece",
+        "One Piece",
         "Bleach",
-        "Hunter X Hunter",
+        "Hunter x Hunter",
         "Cowboy Bebop",
         "Vinland Saga",
-        "Dragon ball",
+        "Dragon Ball",
         "Naruto",
         "Berserk",
-        "Code geass",
-        "One punch man",
+        "Code Geass",
+        "One Punch Man",
         "Gintama",
         "Kingdom",
         "Demon Slayer",
-        "Neone Genesis Evangelion",
-        "Mob psycho 100",
-        "Ghost in the shell",
-        "Solo leveling",
-        "Ranking of kings",
-        "Saint Seya",
-        "InuYusha",
+        "Neon Genesis Evangelion",
+        "Mob Psycho 100",
+        "Ghost in the Shell",
+        "Solo Leveling",
+        "Ranking of Kings",
+        "Saint Seiya",
+        "Inuyasha",
         "Chainsaw Man",
-        "Kaiju n.8",
-        "Spy x family",
-        "Dragon ball Super",
+        "Kaiju No. 8",
+        "Spy x Family",
+        "Dragon Ball Super",
         "Made in Abyss",
-        "Gurren laggan",
+        "Gurren Lagann",
         "Parasyte",
-        "My hero academia",
+        "My Hero Academia",
         "86",
-        "Black clover",
+        "Black Clover",
         "Fate/Zero",
-        "Yu-Gi-Oh",
-        "Dragon ball Daima",
-        "Dr.Stone",
+        "Yu-Gi-Oh!",
+        "Dragon Ball Daima",
+        "Dr. Stone",
         "Hell's Paradise",
-        "Tensura(That Time I got reincarnated as a slime)",
-        "The promised Neverland",
-        "Doredoro",
+        "That Time I Got Reincarnated as a Slime",
+        "The Promised Neverland",
+        "Dorohedoro",
         "Banana Fish",
         "Ranma 1/2",
         "Golden Kamuy",
         "Bakemonogatari",
         "Claymore",
         "Yona of the Dawn",
-        "Mobile Suit Gundan Wing",
+        "Mobile Suit Gundam Wing",
         "Shaman King",
         "Lupin the Third",
         "Fairy Tail",
         "Black Lagoon",
         "Digimon Adventure",
-        "Assasination Classroom",
-        "Elfen lied",
+        "Assassination Classroom",
+        "Elfen Lied",
         "Tokyo Revengers",
-        "Akame ga Kill",
+        "Akame ga Kill!",
         "Bungo Stray Dogs",
-        "Kill la kill",
-        "Re:zero",
-    ];
-    let isekai=vec![
+        "Kill la Kill",
         "Re:Zero",
-        "No game no life",
+    ];
+
+    let isekai = vec![
+        "Re:Zero",
+        "No Game No Life",
         "Konosuba",
         "Mushoku Tensei",
-        "Tensura(That Time I got reincarnated as a slime)",
+        "That Time I Got Reincarnated as a Slime",
         "Overlord",
         "The Great Cleric",
         "Reincarnated as a Sword",
         "The Rising of the Shield Hero",
         "Sword Art Online",
-        "The World's Finest Assasin Gets Reincarnated in Another World as an Aristocrat",
+        "The World's Finest Assassin Gets Reincarnated in Another World as an Aristocrat",
         "The Faraway Paladin",
         "Saga of Tanya the Evil",
         "World Trigger",
-        "Farming life in Another World",
-        "Demon lord,Retry!",
-        "The Aristocrat's Otherwordly Adventure: Serving Gods Who Go Too Far",
-        "The Irregular at Magic High school",
-        "I got a Cheat skill in Another World and Became unrivaled in the Real world,Too",
-        "Bofuri:I Don't want to Get Hurt,So I'll Max Out My Defense",
+        "Farming Life in Another World",
+        "Demon Lord, Retry!",
+        "The Aristocrat's Otherworldly Adventure: Serving Gods Who Go Too Far",
+        "The Irregular at Magic High School",
+        "I Got a Cheat Skill in Another World and Became Unrivaled in the Real World, Too",
+        "Bofuri: I Don't Want to Get Hurt, so I'll Max Out My Defense",
         "How a Realist Hero Rebuilt the Kingdom",
         "Am I Actually the Strongest?",
-        "The Reincarnationf of the Strongest Exorcist in Another World",
+        "The Reincarnation of the Strongest Exorcist in Another World",
         "Black Summoner",
         "Wise Man's Grandchild",
         "The Eminence in Shadow",
-        "Welcome to Demon-school,Iruma-kun",
-        "The 8th Son?Are you Kidding Me?",
-        "In Another World with my Smartphone",
-        "Im Standing on a Million Lives",
-        "My Next Life as a Vilainess:All Routes Lead to Doom",
-        "Arifureta:From Commonplace to World's Strongest",
+        "Welcome to Demon School! Iruma-kun",
+        "The 8th Son? Are You Kidding Me?",
+        "In Another World with My Smartphone",
+        "I'm Standing on a Million Lives",
+        "My Next Life as a Villainess: All Routes Lead to Doom!",
+        "Arifureta: From Commonplace to World's Strongest",
         "In the Land of Leadale",
-        "Reborn as a Vednding Machine,Now I Wander the Dungeon",
-        "Tsukimichi:Moonlit Fantasy",
+        "Reborn as a Vending Machine, I Now Wander the Dungeon",
+        "Tsukimichi: Moonlit Fantasy",
         "Skeleton Knight in Another World",
-        "Trapped in a Dating Sim:The World of Otome Games is Tough for Mobs",
+        "Trapped in a Dating Sim: The World of Otome Games Is Tough for Mobs",
         "Goblin Slayer",
-        "Chivalry of a Failed knight",
-        "So I'm a spider,So What?",
-        "How NOT to Summon a demon lord",
+        "Chivalry of a Failed Knight",
+        "So I'm a Spider, So What?",
+        "How NOT to Summon a Demon Lord",
         "Dead Mount Death Play",
-        "The Greatest Demon Lord is Reborn as a Typical Nobody",
-        "By the grace of the Gods",
+        "The Greatest Demon Lord Is Reborn as a Typical Nobody",
+        "By the Grace of the Gods",
         "Isekai Cheat Magician",
         "Kuma Kuma Kuma Bear",
         "My Unique Skill Makes Me OP Even at Level 1",
         "Sweet Reincarnation",
-        "The Fruit of Evolution:Before I Knew It,My Life Had It Made",
+        "The Fruit of Evolution: Before I Knew It, My Life Had It Made!",
         "Tower of God",
-        "Grimgar,Ashes and Illusions",
+        "Grimgar, Ashes and Illusions",
         "Knight's & Magic",
-        "I've Been Killing Slimes for 300 Years and Maexed out My Level",
-        "Death March to the Parallel World Rhaspody",
+        "I've Been Killing Slimes for 300 Years and Maxed Out My Level",
+        "Death March to the Parallel World Rhapsody",
         "The Misfit of Demon King Academy",
         "The Dungeon of Black Company",
-        "High School Prodigies Have It Easy even in Another World!",
+        "High School Prodigies Have It Easy Even in Another World!",
         "Log Horizon",
-        "Cautious Hero:The Hero is Overpowered but Overly Cautious",
+        "Cautious Hero: The Hero Is Overpowered but Overly Cautious",
         "Gate",
-        "I'm the Vilainess,So I'm Taming the Final Boss",
+        "I'm the Villainess, So I'm Taming the Final Boss",
         "The Strongest Sage with the Weakest Crest",
-        "Uncle from Anotehr World",
+        "Uncle from Another World",
         "Plunderer",
-        "Life with an Ordinary Guy Who Reincarnated into a Total Fantasy Knockout!",
-        "Didnt I say to Make my Abilities Average in the Next Life?!",
+        "Life with an Ordinary Guy Who Reincarnated into a Total Fantasy Knockout",
+        "Didn't I Say to Make My Abilities Average in the Next Life?!",
         "Restaurant to Another World",
         "Shall I Survive Using Potions!",
-        "Chilling in Another World with Level 2 Super Cheat Powers",
+        "Chillin' in Another World with Level 2 Super Cheat Powers",
         "Re:Monster",
         "The Weakest Tamer Began a Journey to Pick Up Trash",
         "Ascendance of a Bookworm",
     ];
-    let mystery=vec![
+
+    let mystery = vec![
         "Lord of Mysteries",
         "Re:Zero",
         "Death Note",
@@ -165,323 +302,299 @@ fn main() {
         "Monogatari",
         "The Apothecary Diaries",
         "Monster",
-        "Jojo's Bizzare Adventure",
+        "JoJo's Bizarre Adventure",
         "False Memory",
         "Link Click",
-        "Oshi No Ko",
+        "Oshi no Ko",
         "The Disappearance of Haruhi Suzumiya",
-        "MUSHI-SHI The Next Passage",
+        "Mushi-Shi: The Next Passage",
         "The Founder of Diabolism",
         "Made in Abyss",
-        "ODDTAXI",
+        "Odd Taxi",
         "To Be Hero X",
         "Bungo Stray Dogs",
         "The Tatami Galaxy",
         "Madoka Magica",
         "The Garden of Sinners",
-        "PLUTO",
+        "Pluto",
         "Demon Slayer",
-        "Dorehodoro",
+        "Dorohedoro",
         "Neon Genesis Evangelion",
         "Summer Time Rendering",
-        "MILGRAM",
+        "Milgram",
         "The Promised Neverland",
         "Revolutionary Girl Utena",
         "Land of the Lustrous",
-        "Made in Abyss:Wandering Twilight",
+        "Made in Abyss: Wandering Twilight",
         "Scissor Seven",
-        "Fate/Strange Fake",
-        "Monoke the Movie",
+        "Fate/strange Fake",
+        "Mononoke the Movie",
         "Cowboy Bebop",
         "Ghost in the Shell",
-        "MUSHI-SHI",
+        "Mushi-Shi",
         "Detective Conan",
-        "Racal Does not Dream of Bunny Girl Senpai",
-        "Rascal Dreams of Bunny Girl Senpai",
-        "Honkai Star Rail-Rondo Across Countless Kalpas",
+        "Rascal Does Not Dream of Bunny Girl Senpai",
+        "Honkai: Star Rail",
         "Moriarty the Patriot",
         "Mobile Police Patlabor",
         "Heavenly Delusion",
         "Baccano!",
-        "ERASED",
-        "Bungo Stray Dogs 3",
+        "Erased",
         "Princess Tutu",
-        "Re:zero shh",
         "Suzume",
         "The Tatami Time Machine Blues",
         "The Case Study of Vanitas",
         "Black Butler",
         "How to Become Ordinary",
-        "Precure all Stars F",
+        "Precure All Stars F",
         "The Summer Hikaru Died",
-        "Toilet bound Hanako-kun",
-        "Nier:Automata",
-        "Serial Expirements Lain",
-        "Little Busters!Refrain",
+        "Toilet-Bound Hanako-kun",
+        "NieR:Automata",
+        "Serial Experiments Lain",
+        "Little Busters! Refrain",
         "Lupin the 3rd",
-        "Made in Abyss",
         "Death Parade",
         "Haibane Renmei",
-        "Higurashi:When they cry",
+        "Higurashi: When They Cry",
         "From the New World",
         "Scott Pilgrim Takes Off",
-        "Durara",
-        "SHADOWS HOUSE",
+        "Durarara!!",
+        "Shadows House",
         "Kaiba",
         "Paprika",
         "Penguindrum",
         "City Hunter 2",
-        "Gankutsou: The Count of Monte Cristo",
+        "Gankutsuou: The Count of Monte Cristo",
         "Hyouka",
         "Terror in Resonance",
-        "ASTRA LOST IN SPACE",
-        "Classrom of the Elite",
+        "Astra Lost in Space",
+        "Classroom of the Elite",
         "Sonny Boy",
-        "BEASTARS",
+        "Beastars",
         "When Marnie Was There",
         "Undead Murder Farce",
-        "Den-noh Coil",
+        "Dennou Coil",
         "Tsubasa",
         "Gosick",
-        "GNOSIA",
+        "Gnosia",
         "Darker than Black",
         "A Tale of Melodies",
-        "Fight Break Sphere",
+        "Fights Break Sphere",
         "Treasure Island",
         "Magic Kaito 1412",
-        "Shadows HOUSE",
         "Death Billiards",
         "The Melancholy of Haruhi Suzumiya",
-        "BEASTARS",
-        "Re:Zero",
     ];
-    let romance=vec![
-        "Re:zero",
-        "Chainsaw man",
+
+    let romance = vec![
+        "Re:Zero",
+        "Chainsaw Man",
         "Owarimonogatari",
         "Fruits Basket",
-        "Kaguya-Sama",
+        "Kaguya-sama: Love Is War",
         "Clannad",
         "A Silent Voice",
         "The Dangers in My Heart",
         "Your Name",
         "Gurren Lagann",
-        "NANA",
+        "Nana",
         "Howl's Moving Castle",
-        "Runoni Kenshin",
-        "Chiyafuru",
+        "Rurouni Kenshin",
+        "Chihayafuru",
         "The Tatami Galaxy",
-        "You and I are Polar Opposites",
-        "Rascal Doest Not Dream of a Dear Friend",
-        "Rascal Does not Dream of a Dreaming Girl",
+        "You and I Are Polar Opposites",
+        "Rascal Does Not Dream of a Dear Friend",
+        "Rascal Does Not Dream of a Dreaming Girl",
         "Heaven Official's Blessing",
-        "Your lie in April",
-        "Given the Movie:To The Sea",
+        "Your Lie in April",
+        "Given the Movie: To the Sea",
         "The Fragrant Flower Blooms with Dignity",
-        "I want to Eat Your Pancreas",
-        "Love through a Prism",
-        "Re:zero Season3",
+        "I Want to Eat Your Pancreas",
+        "Love Through a Prism",
         "Love Unseen Beneath the Clear Night Sky",
         "The Garden of Sinners",
-        "Fate/Stay night",
+        "Fate/stay night",
         "Call of the Night",
-        "Kimi ni Todoke: From me to You",
+        "Kimi ni Todoke: From Me to You",
         "Wolf Children",
         "Bakuman",
-        "Kaisama Kiss",
-        "Teasing Master Takagai San!",
-        "Bakuman 3",
+        "Kaichou wa Maid-sama!",
+        "Teasing Master Takagi-san",
         "Sounds of Life",
-        "Dan DA DAN",
+        "Dan Da Dan",
         "Revolutionary Girl Utena",
         "The Ramparts of Ice",
         "How to Become Ordinary",
         "Major",
         "Violet Evergarden",
-        "Josee,The Tiger and the Fish",
+        "Josee, the Tiger and the Fish",
         "Bakemonogatari",
-        "Sasaki and Miyano:Graduation",
-        "Stein's Gate",
+        "Sasaki and Miyano: Graduation",
+        "Steins;Gate",
         "My Teen Romantic Comedy SNAFU",
-        "Fruits Basket",
-        "Is it wrong to Pick up Girls in a Dungeon?",
-        "Welcome to N-H-K",
-        "My Dress Up Darling",
+        "Is It Wrong to Try to Pick Up Girls in a Dungeon?",
+        "Welcome to the N.H.K.",
+        "My Dress-Up Darling",
         "Botan Kamiina Fully Blossoms When Drunk",
-        "Spice and Wolf II",
+        "Spice and Wolf",
         "A Sign of Affection",
         "Smoking Behind the Supermarket with You",
         "Weathering with You",
         "Whisper of the Heart",
-        "Into the night",
+        "Into the Night",
         "Redline",
-        "Blue box",
-        "Horimiya",
         "Blue Box",
-        "The Night is Short,Walk on Girl",
+        "Horimiya",
+        "The Night Is Short, Walk On Girl",
         "Skip and Loafer",
-        "Re:LIFE",
-        "Though I am an Inept Villainess",
+        "ReLIFE",
+        "Though I Am an Inept Villainess",
         "Gridman Universe",
-        "InuYusha",
+        "Inuyasha",
         "The Duke of Death and His Maid",
-        "Makeine:Too Many Losing Heroines!",
+        "Makeine: Too Many Losing Heroines!",
         "Kids on the Slope",
-        "Give the Movie",
+        "Given",
         "The Wind Rises",
-        "Release that Witch",
-        "Anohana:The Flower We Saw That Day",
-        "The 100 Girlfriends Who Really,Really,Really LOVE YOU",
+        "Release That Witch",
+        "Anohana: The Flower We Saw That Day",
+        "The 100 Girlfriends Who Really, Really, Really, Really, Really Love You",
         "Lost in Starlight",
         "Planetes",
-        "The Tunnel to Summer",
+        "The Tunnel to Summer, the Exit of Goodbyes",
         "Insomniacs After School",
     ];
-    let comedy=vec![
+
+    let comedy = vec![
         "Gintama",
         "Owarimonogatari",
         "Fruits Basket",
-        "Kaguya-Sama",
+        "Kaguya-sama: Love Is War",
         "Black Clover",
-        "One-Piece",
-        "Mob Psycho 100 ",
-        "HAIKYU",
-        "Hajime no Ippo:The Fighting!",
-        "Bocchi the Rock",
+        "One Piece",
+        "Mob Psycho 100",
+        "Haikyu!!",
+        "Hajime no Ippo",
+        "Bocchi the Rock!",
         "The Dangers in My Heart",
-        "Gurren Laggan",
+        "Gurren Lagann",
         "Bungo Stray Dogs",
-        "Dr.Stone",
+        "Dr. Stone",
         "Chiikawa",
-        "Dr.Stone Science",
         "Delicious in Dungeon",
         "The Tatami Galaxy",
     ];
-    let sliceoflife=vec![
+
+    let sliceoflife = vec![
         "Fruits Basket",
-        "Cosmic Princess Kaguya",
-        "March comes in like a lion",
-        "Kaguya-sama",
+        "Cosmic Princess Kaguya!",
+        "March Comes in Like a Lion",
+        "Kaguya-sama: Love Is War",
         "Clannad",
         "A Silent Voice",
         "Mob Psycho 100",
-        "Sound! Ephorium",
-        "Journal Witch Witch",
+        "Sound! Euphonium",
         "Violet Evergarden",
-        "Bocchi the Rock",
-        "Umamusume:Pretty Derby",
+        "Bocchi the Rock!",
+        "Umamusume: Pretty Derby",
         "Umamusume: Cinderella Gray",
-        "MUSHI-SHI",
-        "The Dangers in my Heart",
-        "LOOK BACK",
-        "NANA" ,
+        "Mushi-Shi",
+        "The Dangers in My Heart",
+        "Look Back",
+        "Nana",
         "Natsume's Book of Friends",
-        "Yamada and the 7 Witches",
+        "Yamada-kun and the Seven Witches",
         "Chiikawa",
         "Your Lie in April",
-        "I want to eat your pancreas",
-        "Grand blue dreaming",
+        "I Want to Eat Your Pancreas",
+        "Grand Blue Dreaming",
         "Call of the Night",
-        "The disastrous life of Saiki.K",
+        "The Disastrous Life of Saiki K.",
         "Wolf Children",
-        "Bakuman 3",
-        "Teasing Master Takagi-San",
-        "Bang Dream",
-        "Girls's Last Tour",
+        "Teasing Master Takagi-san",
+        "BanG Dream!",
+        "Girls' Last Tour",
         "Aria the Natural",
         "The Ramparts of Ice",
-        "Spice and Wolf II",     
+        "Spice and Wolf",
     ];
-
-
-
-
-
-
-
-
-
-    
 
     // Load catalog from database
     let anime_catalog = data::catalog("data.json");
 
-    let name = ask("Are you new to anime?(Yes/No): ");
+    let name = ask("Are you new to anime? (Yes/No): ");
 
-    // Lets start the logic this is going to be long I js realised i need to scrape a crazy amount of stuff to make this
-    if name.eq_ignore_ascii_case("Yes") {
+    if name.eq_ignore_ascii_case("yes") || name.eq_ignore_ascii_case("y") {
         let genre = ask(
             "What genre do you like?:\n\
-             1. Action(Shonen)\n\
+             1. Action (Shonen)\n\
              2. Isekai/Fantasy\n\
-             3. Slice of Life(Vibe/Relax)\n\
+             3. Slice of Life (Vibe/Relax)\n\
              4. Mystery\n\
              5. Romance\n\
              6. Comedy\n\
              Enter choice: ",
         );
 
-        // lowercase + trim once, so "2", "Isekai", "isekai fantasy" all work
         let genre = genre.trim().to_lowercase();
 
-        if genre == "1" || genre.contains("action") || genre.contains("shonen") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=action[nanos % action.len()];
-            println!("Recommended: {}",pick);
-        } else if genre == "2" || genre.contains("isekai") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=isekai[nanos % isekai.len()];
-            println!("Recommended: {}",pick);
-        } else if genre == "3" || genre.contains("slice of life") || genre.contains("vibe") || genre.contains("relax") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=sliceoflife[nanos % sliceoflife.len()];
-            println!("Recommended: {}",pick);
+        let list: &[&str] = if genre == "1" || genre.contains("action") || genre.contains("shonen")
+        {
+            &action
+        } else if genre == "2" || genre.contains("isekai") || genre.contains("fantasy") {
+            &isekai
+        } else if genre == "3"
+            || genre.contains("slice of life")
+            || genre.contains("vibe")
+            || genre.contains("relax")
+        {
+            &sliceoflife
         } else if genre == "4" || genre.contains("mystery") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=mystery[nanos % mystery.len()];
-            println!("Recommended: {}",pick);
+            &mystery
         } else if genre == "5" || genre.contains("romance") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=romance[nanos % romance.len()];
-            println!("Recommended: {}",pick);
+            &romance
         } else if genre == "6" || genre.contains("comedy") {
-            let nanos= std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos() as usize;
-            
-            let pick=comedy[nanos % comedy.len()];
-            println!("Recommended: {}",pick);
+            &comedy
         } else {
-            println!("Recommended: Fullmetal Alchemist: Brotherhood!");
+            println!("Recommended: Re:Zero");
+            return;
+        };
+
+        if list.is_empty() {
+            println!("That list is empty, add some titles first.");
+            return;
+        }
+
+        let mut rng = Rng::new();
+        let mut shown: Vec<String> = Vec::new();
+
+        loop {
+            let picks = pick_unique(&mut rng, list, 3, &shown);
+
+            if picks.is_empty() {
+                println!("\nNo more anime to show for this genre.");
+                break;
+            }
+
+            for title in &picks {
+                show(title, &anime_catalog);
+                shown.push(title.clone());
+            }
+
+            if picks.len() < 3 {
+                println!("\nThat's all I have for this genre.");
+                break;
+            }
+
+            let more = ask("\nWant more? (Yes/No): ");
+            if !more.eq_ignore_ascii_case("yes") && !more.eq_ignore_ascii_case("y") {
+                break;
+            }
         }
     } else {
         println!("\nSearch through the catalog:");
 
-        let titles: Vec<String> = anime_catalog
-            .iter()
-            .map(|a| a.title.clone())
-            .collect();
+        let titles: Vec<String> = anime_catalog.iter().map(|a| a.title.clone()).collect();
 
         if titles.is_empty() {
             println!("No anime found in database!");
@@ -493,46 +606,7 @@ fn main() {
             .prompt();
 
         match selection {
-            Ok(chosen_title) => {
-                if let Some(anime) = anime_catalog.iter().find(|a| a.title == chosen_title) {
-                    println!("\n{}", "=".repeat(30));
-                    println!("Title: {}", anime.title);
-                    println!("Type: {}", anime.kind);
-                    if let Some(eps) = anime.episodes {
-                        println!("Episodes: {}", eps);
-                    }
-                    if let Some(year) = anime.year {
-                        println!("Year: {}", year);
-                    }
-                    if !anime.genres.is_empty() {
-                        println!("Tags: {}", anime.genres.join(", "));
-                    }
-                    println!("{}", "=".repeat(30));
-
-                    match data::details(anime) {
-                        Some(details) => {
-                            if details.synopsis.is_empty() {
-                                println!("Synopsis: Not available");
-                            } else {
-                                println!("\nSynopsis:\n{}", details.synopsis);
-                            }
-
-                            if details.streams.is_empty() {
-                                println!("\nWhere to watch: Not available");
-                            } else {
-                                println!("\nWhere to watch:");
-                                for (site, url) in &details.streams {
-                                    println!("  {} — {}", site, url);
-                                }
-                            }
-                        }
-                        None => {
-                            println!("\nSynopsis: Not available");
-                            println!("Where to watch: Not available");
-                        }
-                    }
-                }
-            }
+            Ok(chosen_title) => show(&chosen_title, &anime_catalog),
             Err(_) => {
                 println!("Search cancelled.");
             }
