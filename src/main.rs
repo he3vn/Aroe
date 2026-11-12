@@ -1,7 +1,7 @@
 mod data;
 
 use inquire::Select;
-use std::{io::{self, Write}, time::Duration};
+use std::io::{self, Write};
 
 // This is basically my new input= for rust since they dont have it
 fn ask(prompt: &str) -> String {
@@ -83,8 +83,86 @@ fn main() {
         "Kill la kill",
         "Re:zero",
     ];
+    let isekai=vec![
+        "Re:Zero",
+        "No game no life",
+        "Konosuba",
+        "Mushoku Tensei",
+        "Tensura(That Time I got reincarnated as a slime)",
+        "Overlord",
+        "The Great Cleric",
+        "Reincarnated as a Sword",
+        "The Rising of the Shield Hero",
+        "Sword Art Online",
+        "The World's Finest Assasin Gets Reincarnated in Another World as an Aristocrat",
+        "The Faraway Paladin",
+        "Saga of Tanya the Evil",
+        "World Trigger",
+        "Farming life in Another World",
+        "Demon lord,Retry!",
+        "The Aristocrat's Otherwordly Adventure: Serving Gods Who Go Too Far",
+        "The Irregular at Magic High school",
+        "I got a Cheat skill in Another World and Became unrivaled in the Real world,Too",
+        "Bofuri:I Don't want to Get Hurt,So I'll Max Out My Defense",
+        "How a Realist Hero Rebuilt the Kingdom",
+        "Am I Actually the Strongest?",
+        "The Reincarnationf of the Strongest Exorcist in Another World",
+        "Black Summoner",
+        "Wise Man's Grandchild",
+        "The Eminence in Shadow",
+        "Welcome to Demon-school,Iruma-kun",
+        "The 8th Son?Are you Kidding Me?",
+        "In Another World with my Smartphone",
+        "Im Standing on a Million Lives",
+        "My Next Life as a Vilainess:All Routes Lead to Doom",
+        "Arifureta:From Commonplace to World's Strongest",
+        "In the Land of Leadale",
+        "Reborn as a Vednding Machine,Now I Wander the Dungeon",
+        "Tsukimichi:Moonlit Fantasy",
+        "Skeleton Knight in Another World",
+        "Trapped in a Dating Sim:The World of Otome Games is Tough for Mobs",
+        "Goblin Slayer",
+        "Chivalry of a Failed knight",
+        "So I'm a spider,So What?",
+        "How NOT to Summon a demon lord",
+        "Dead Mount Death Play",
+        "The Greatest Demon Lord is Reborn as a Typical Nobody",
+        "By the grace of the Gods",
+        "Isekai Cheat Magician",
+        "Kuma Kuma Kuma Bear",
+        "My Unique Skill Makes Me OP Even at Level 1",
+        "Sweet Reincarnation",
+        "The Fruit of Evolution:Before I Knew It,My Life Had It Made",
+        "Tower of God",
+        "Grimgar,Ashes and Illusions",
+        "Knight's & Magic",
+        "I've Been Killing Slimes for 300 Years and Maexed out My Level",
+        "Death March to the Parallel World Rhaspody",
+        "The Misfit of Demon King Academy",
+        "The Dungeon of Black Company",
+        "High School Prodigies Have It Easy even in Another World!",
+        "Log Horizon",
+        "Cautious Hero:The Hero is Overpowered but Overly Cautious",
+        "Gate",
+        "I'm the Vilainess,So I'm Taming the Final Boss",
+        "The Strongest Sage with the Weakest Crest",
+        "Uncle from Anotehr World",
+        "Plunderer",
+        "Life with an Ordinary Guy Who Reincarnated into a Total Fantasy Knockout!",
+        "Didnt I say to Make my Abilities Average in the Next Life?!",
+        "Restaurant to Another World",
+        "Shall I Survive Using Potions!",
+        "Chilling in Another World with Level 2 Super Cheat Powers",
+        "Re:Monster",
+        "The Weakest Tamer Began a Journey to Pick Up Trash",
+        "Ascendance of a Bookworm",
+    ];
 
 
+
+
+
+    
 
     // Load catalog from database
     let anime_catalog = data::catalog("data.json");
@@ -96,14 +174,17 @@ fn main() {
         let genre = ask(
             "What genre do you like?:\n\
              1. Action(Shonen)\n\
-             2. Mystery & Thriller\n\
+             2. Isekai/Fantasy\n\
              3. Slice of Life(Vibe/Relax)\n\
              4. Fantasy\n\
              5. Romance\n\
-        so     Enter choice: ",
+             Enter choice: ",
         );
 
-        if genre == "1" || genre.eq_ignore_ascii_case("Action") {
+        // lowercase + trim once, so "2", "Isekai", "isekai fantasy" all work
+        let genre = genre.trim().to_lowercase();
+
+        if genre == "1" || genre.contains("action") || genre.contains("shonen") {
             let nanos= std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -111,13 +192,19 @@ fn main() {
             
             let pick=action[nanos % action.len()];
             println!("Recommended: {}",pick);
-        } else if genre == "2" || genre.eq_ignore_ascii_case("Mystery") {
-            println!("Recommended: Death Note!");
-        } else if genre == "3" || genre.eq_ignore_ascii_case("Slice of Life") {
+        } else if genre == "2" || genre.contains("isekai") {
+            let nanos= std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .subsec_nanos() as usize;
+            
+            let pick=isekai[nanos % isekai.len()];
+            println!("Recommended: {}",pick);
+        } else if genre == "3" || genre.contains("slice of life") || genre.contains("vibe") || genre.contains("relax") {
             println!("Recommended: Spy x Family!");
-        } else if genre == "4" || genre.eq_ignore_ascii_case("Fantasy") {
+        } else if genre == "4" || genre.contains("fantasy") {
             println!("Recommended: Frieren: Beyond Journey's End!");
-        } else if genre == "5" || genre.eq_ignore_ascii_case("Romance") {
+        } else if genre == "5" || genre.contains("romance") {
             println!("Recommended: Kaguya-sama: Love Is War!");
         } else {
             println!("Recommended: Fullmetal Alchemist: Brotherhood!");
