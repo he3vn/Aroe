@@ -113,3 +113,91 @@ pub fn recommend<'a>(catalog: &'a [Anime], favs: &[&Anime], limit: usize) -> Vec
                 let closeness = (1.0 - (y as f64 - avg).abs() / 20.0).max(0.0);
                 score *= 1.0 + 0.15 * closeness;
             }
+ 
+            shared.sort_by(|x, y| y.1.partial_cmp(&x.1).unwrap());
+            Some(Rec {
+                anime: a,
+                score,
+                shared: shared.into_iter().take(4).map(|(g, _)| g).collect(),
+            })
+        })
+        .collect();
+ 
+    recs.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+    recs.truncate(limit);
+    recs
+}
+ 
+fn pick_favorites(catalog: &[Anime]) -> Option<Vec<Favorite>> {
+    let mut chosen: Vec<Favorite> = Vec::new();
+ 
+    while chosen.len() < PICKS {
+        let options: Vec<String> = catalog
+            .iter()
+            .filter(|a| !chosen.iter().any(|c| c.mal_id == a.mal_id))
+            .map(|a| a.title.clone())
+            .collect();
+ 
+        let prompt = format!("Pick anime {}/{} (type to search):", chosen.len() + 1, PICKS);
+        let title = Select::new(&prompt, options).with_page_size(10).prompt().ok()?;
+        let anime = catalog.iter().find(|a| a.title == title)?;
+        chosen.push(Favorite {
+            mal_id: anime.mal_id,
+            title: anime.title.clone(),
+        });
+    }
+    Some(chosen)
+}
+ 
+pub fn run(catalog: &[Anime]) {
+    if catalog.is_empty() {
+        println!("No anime found in database!");
+        return;
+    }
+ 
+    let mut profile = load_profile();
+ 
+    let reuse = if profile.favorites.len() == PICKS {
+        println!("\nYour saved picks:");
+        for f in &profile.favorites {
+            println!("  - {}", f.title);
+        }
+        let choice = Select::new("", vec!["Use these", "Pick new ones"]).prompt();
+        matches!(choice, Ok("Use these"))
+    } else {
+        false
+    };
+ 
+    if !reuse {
+        match pick_favorites(catalog) {
+            Some(favs) => {
+                profile.favorites = favs;
+                save_profile(&profile);
+            }
+            None => {
+                println!("Cancelled.");
+                return;
+            }
+        }
+    }
+ 
+    let favs: Vec<&Anime> = profile
+        .favorites
+        .iter()
+        .filter_map(|f| catalog.iter().find(|a| a.mal_id == f.mal_id))
+        .collect();
+ 
+    let recs = recommend(catalog, &favs, RESULTS);
+    if recs.is_empty() {
+        println!("\nNot enough data to recommend anything from those picks.");
+        return;
+    }
+ 
+    println!("\nBased on your picks, you might like:\n");
+    for (i, r) in recs.iter().enumerate() {
+        let year = r.anime.year.map(|y| y.to_string()).unwrap_or_else(|| "?".into());
+        println!("{:>2}. {} ({}, {})", i + 1, r.anime.title, r.anime.kind, year);
+        println!("    because: {}", r.shared.join(", "));
+    }
+}
+ 
