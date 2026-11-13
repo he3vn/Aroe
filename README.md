@@ -23,7 +23,7 @@
 ---
 
 <p align="center">
-   <img src="demo.png" alt="aroe" width="400" />
+   <img src="demo.png" alt="aroe" width="700" />
 
 </p>
 
