@@ -23,8 +23,8 @@
 ---
 
 <p align="center">
-  <img src="<img width="775" height="329" alt="SCR-20261113-ckfb" src="https://github.com/user-attachments/assets/2bcfdbc9-6e52-48ca-8e00-15e8f52140b4" />
-" alt="demo" />
+   <img src="demo.png" alt="aroe" width="100" />
+
 </p>
 
 **the anime recommender that lives in your terminal.**
