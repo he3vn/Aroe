@@ -1,6 +1,6 @@
 mod data;
+mod recommend;
 
-use inquire::Select;
 use std::io::{self, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -592,24 +592,7 @@ fn main() {
             }
         }
     } else {
-        println!("\nSearch through the catalog:");
-
-        let titles: Vec<String> = anime_catalog.iter().map(|a| a.title.clone()).collect();
-
-        if titles.is_empty() {
-            println!("No anime found in database!");
-            return;
-        }
-
-        let selection = Select::new("Type anime title:", titles)
-            .with_page_size(10)
-            .prompt();
-
-        match selection {
-            Ok(chosen_title) => show(&chosen_title, &anime_catalog),
-            Err(_) => {
-                println!("Search cancelled.");
-            }
-        }
+        // Not new: pick 3 favourites, save them, get recommendations.
+        recommend::run(&anime_catalog);
     }
 }
