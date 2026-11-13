@@ -23,7 +23,8 @@
 ---
 
 <p align="center">
-  <img src="https://picsum.photos/seed/aroe/1200/500" alt="a random placeholder image" />
+  <img src="<img width="775" height="329" alt="SCR-20261113-ckfb" src="https://github.com/user-attachments/assets/2bcfdbc9-6e52-48ca-8e00-15e8f52140b4" />
+" alt="demo" />
 </p>
 
 **the anime recommender that lives in your terminal.**
