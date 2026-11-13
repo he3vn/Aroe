@@ -1,7 +1,7 @@
 # aroe
 
 <p align="center">
-  <img src="logo.jpeg" alt="aroe" width="100" />
+  <img src="afterglyph-logo (1).gif" alt="aroe" width="100" />
 </p>
 
 <p align="center">
