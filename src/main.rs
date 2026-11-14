@@ -350,17 +350,147 @@ impl App {
             self.on_rating_key(key);
             return;
         }
-        if key.code ==KeyCode::Tab {
-            self.go(Screen::from_index()self.screen.index()+ 1 % 5));
+        if key.code == KeyCode::Tab {
+            self.go(Screen::from_index((self.screen.index() + 1) % 5));
             return;
         }
-        if key.code==KeyCode::Char("?")&& self.screen != Screen::Search {
-            if self.screen ==Screen::Help {
-                self.screen= self.prev;
+        if key.code == KeyCode::Char('?') && self.screen != Screen::Search {
+            if self.screen == Screen::Help {
+                self.screen = self.prev;
             } else {
                 self.go(Screen::Help);
             }
             return;
         }
+        
+        if self.screen != Screen::Search {
+            if let KeyCode::Char(c @ '1'..='5') = key.code {
+                self.go(Screen::from_index(c as usize - '1' as usize));
+                return;
+            }
+        }
 
-        // Yo ima add number travel
+        match self.screen {
+            Screen::Search => match key.code {
+                KeyCode::Esc => {
+                    if self.menu_focus.take().is_none() {
+                        self.query.clear();
+                        self.hits.clear();
+                        self.sel = 0;
+                    }
+                }
+                KeyCode::Enter => {
+                    if let Some(i) = self.menu_focus {
+                        self.go(MENU[i]);
+                    } else if let Some(idx) = self.current_idx() {
+                        self.open_rating(idx);
+                    }
+                }
+                KeyCode::Down => {
+                    if self.query.is_empty() {
+                        self.menu_focus = Some(match self.menu_focus {
+                            None => 0,
+                            Some(i) => (i + 1).min(MENU.len() - 1),
+                        });
+                    } else {
+                        self.sel = (self.sel + 1).min(self.hits.len().saturating_sub(1));
+                    }
+                }
+                KeyCode::Up => {
+                    if self.query.is_empty() {
+                        self.menu_focus = match self.menu_focus {
+                            None | Some(0) => None,
+                            Some(i) => Some(i - 1),
+                        };
+                    } else {
+                        self.sel = self.sel.saturating_sub(1);
+                    }
+                }
+                KeyCode::Left => self.sel = self.sel.saturating_sub(PAGE),
+                KeyCode::Right => {
+                    if !self.hits.is_empty() {
+                        self.sel = (self.sel + PAGE).min(self.hits.len() - 1);
+                    }
+                }
+                KeyCode::Backspace => {
+                    self.menu_focus = None;
+                    self.query.pop();
+                    self.sel = 0;
+                    self.refresh_hits();
+                }
+                KeyCode::Char(c) if !c.is_control() => {
+                    self.menu_focus = None;
+                    self.query.push(c);
+                    self.sel = 0;
+                    self.refresh_hits();
+                }
+                _ => {}
+            },
+            Screen::Vibes => match key.code {
+                KeyCode::Down => {
+                    self.pick_sel = (self.pick_sel + 1).min(self.vibe_picks.len().saturating_sub(1));
+                }
+                KeyCode::Up => self.pick_sel = self.pick_sel.saturating_sub(1),
+                KeyCode::Left => {
+                    self.vibe_sel = self.vibe_sel.saturating_sub(1);
+                    self.load_vibe(false);
+                }
+                KeyCode::Right => {
+                    self.vibe_sel = (self.vibe_sel + 1).min(catalog::VIBES.len() - 1);
+                    self.load_vibe(false);
+                }
+                KeyCode::Enter => {
+                    if let Some(idx) = self.current_idx() {
+                        self.open_rating(idx);
+                    }
+                }
+                KeyCode::Char('n') => self.load_vibe(true),
+                KeyCode::Char('d') => {
+                    if let Some(idx) = self.current_idx() {
+                        self.open_details(idx);
+                    }
+                }
+                KeyCode::Esc => self.go(Screen::Search),
+                _ => {}
+            },
+            //Keybinds for the tui forgot to add this before vibes
+            Screen::Picks => match key.code {
+                KeyCode::Down => {
+                    self.pick_sel = (self.pick_sel + 1).min(self.recs.len().saturating_sub(1));
+                }
+                KeyCode::Up => self.pick_sel = self.pick_sel.saturating_sub(1),
+                KeyCode::Left => self.pick_sel = self.pick_sel.saturating_sub(PAGE),
+                KeyCode::Right => {
+                    if !self.recs.is_empty() {
+                        self.pick_sel = (self.pick_sel + PAGE).min(self.recs.len() - 1);
+                    }
+                }
+                KeyCode::Enter => {
+                    if let Some(idx)=self.current_idx() {
+                        self.open_rating(idx);
+                    }
+                }
+                KeyCode::Char('r')=> self.rebuild_recs(),
+                KeyCode::Char('x')=> {
+                    self.profile.favorites.clear();
+                    self.profile.save(&self.profile_path);
+                    self.rebuild_rec();
+                }
+                KeyCode::Char('d') => {
+                    if let Some(idx)=self.current_idx() {
+                        self.open_details(idx);
+                    }
+                }
+                KeyCode::Esc => self.go(Screen::Search),
+                _ => {}
+            },
+            Screen::Details => match key.code {
+                KeyCode::Esc => {
+                    let back=self.prev;
+                    self.screen =back;
+                }
+                KeyCode::Char('s')  => {
+                    if let Some(idx)=self.detail_idx {
+                        self.open_rating(idx);
+                    }
+                }
