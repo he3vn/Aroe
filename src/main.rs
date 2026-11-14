@@ -202,6 +202,165 @@ impl App {
         self.rebuild_recs();
     }
 
-    fn page_bounds(len:usize,sel:usize) -> (usize,usize) {
-        let start=(sel/PAGE) *PAGE;
-        (start, (start+PAGE).min(len))
+    fn page_bounds(len: usize, sel: usize) -> (usize, usize) {
+        let start = (sel / PAGE) * PAGE;
+        (start, (start + PAGE).min(len))
+    }
+
+    fn on_rating_key(&mut self, key: KeyEvent) {
+        let Some(dialog) = self.rating else { return };
+        let saved = self
+            .anime(dialog.idx)
+            .map(|a| self.profile.contains(a.mal_id))
+            .unwrap_or(false);
+        let rows = Rating::ALL.len() + usize::from(saved);
+        match key.code {
+            KeyCode::Esc => self.rating = None,
+            KeyCode::Up | KeyCode::Char('k') => {
+                let sel = dialog.sel.saturating_sub(1);
+                self.rating = Some(RatingDialog { sel, ..dialog });
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                let sel = (dialog.sel + 1).min(rows.saturating_sub(1));
+                self.rating = Some(RatingDialog { sel, ..dialog });
+            }
+            KeyCode::Enter | KeyCode::Char(' ') => {
+                if dialog.sel < Rating::ALL.len() {
+                    self.pick_rating(dialog.idx, Rating::ALL[dialog.sel]);
+                } else {
+                    self.remove_pick(dialog.idx);
+                }
+            }
+            KeyCode::Char('a') => self.pick_rating(dialog.idx, Rating::Amazing),
+            KeyCode::Char('g') => self.pick_rating(dialog.idx, Rating::Good),
+            KeyCode::Char('m') => self.pick_rating(dialog.idx, Rating::Meh),
+            KeyCode::Char('b') => self.pick_rating(dialog.idx, Rating::Bad),
+            KeyCode::Char('x') if saved => self.remove_pick(dialog.idx),
+            _ => {}
+        }
+    }
+
+    fn rebuild_recs(&mut self) {
+        let Some(catalog) = &self.catalog else { return };
+        self.recs = catalog::recommend(catalog, &self.profile, 120);
+        self.pick_sel = self.pick_sel.min(self.recs.len().saturating_sub(1));
+    }
+
+    n go(&mut self, screen: Screen) {
+        if screen != Screen::Details {
+            self.prev = self.screen;
+        }
+        self.menu_focus = None;
+        self.screen = screen;
+        if screen == Screen::Vibes && self.vibe_picks.is_empty() {
+            self.load_vibe(false);
+        }
+        if screen == Screen::Picks {
+            self.rebuild_recs();
+        }
+    }
+
+    fn load_vibe(&mut self, more: bool) {
+        let Some(catalog) = &self.catalog else { return };
+        if !more {
+            self.vibe_shown.clear();
+        }
+        self.vibe_picks = catalog::vibe_picks(catalog, self.vibe_sel, &self.vibe_shown, 3);
+        for idx in &self.vibe_picks {
+            if let Some(a) = catalog.get(*idx) {
+                self.vibe_shown.push(a.title.clone());
+            }
+        }
+        self.pick_sel = 0;
+    }
+
+    fn open_details(&mut self, idx: usize) {
+        let Some(anime) = self.anime(idx).cloned() else { return };
+        if self.screen != Screen::Details {
+            self.prev = self.screen;
+        }
+        self.detail_idx = Some(idx);
+        self.screen = Screen::Details;
+        self.scroll = 0;
+
+        let key = catalog::details_key(&anime);
+        if let Some(details) = catalog::cached_details(&key) {
+            self.detail = DetailState::Ready(details);
+            self.rx = None;
+            return;
+        }
+        let (tx, rx) = mpsc::channel();
+        thread::spawn(move || {
+            let fetched = catalog::fetch_details(&anime);
+            let _ = tx.send((idx, fetched));
+        });
+        self.rx = Some(rx);
+        self.detail = DetailState::Loading;
+    }
+
+    fn poll_details(&mut self) {
+        let received = self.rx.as_ref().map(|rx| rx.try_recv());
+        let Some(received) = received else { return };
+        match received {
+            Ok((idx, Some(details))) => {
+                if let Some(anime) = self.catalog.as_ref().and_then(|c| c.get(idx)) {
+                    catalog::store_details(&catalog::details_key(anime), &details);
+                }
+                self.detail = DetailState::Ready(details);
+                self.rx = None;
+            }
+            Ok((_, None)) => {
+                self.detail = DetailState::Failed;
+                self.rx = None;
+            }
+            Err(mpsc::TryRecvError::Empty) => {}
+            Err(mpsc::TryRecvError::Disconnected) => {
+                if matches!(self.detail, DetailState::Loading) {
+                    self.detail = DetailState::Failed;
+                }
+                self.rx = None;
+            }
+        }
+    }
+
+    fn on_key(&mut self, key: KeyEvent) {
+        if key.modifiers.contains(KeyModifiers::CONTROL) {
+            match key.code {
+                KeyCode::Char('c') => {
+                    self.quit = true;
+                    return;
+                }
+                KeyCode::Char('o') => {
+                    if let Some(idx) = self.current_idx() {
+                        self.open_details(idx);
+                    }
+                    return;
+                }
+                _ => {}
+            }
+        }
+
+        if let KeyCode::F(n) = key.code {
+            if (1..=5).contains(&n) {
+                self.go(Screen::from_index((n - 1) as usize));
+                return;
+            }
+        }
+        if self.rating.is_some() {
+            self.on_rating_key(key);
+            return;
+        }
+        if key.code ==KeyCode::Tab {
+            self.go(Screen::from_index()self.screen.index()+ 1 % 5));
+            return;
+        }
+        if key.code==KeyCode::Char("?")&& self.screen != Screen::Search {
+            if self.screen ==Screen::Help {
+                self.screen= self.prev;
+            } else {
+                self.go(Screen::Help);
+            }
+            return;
+        }
+
+        // Yo ima add number travel
