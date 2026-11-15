@@ -766,4 +766,796 @@ impl App {
         f.render_widget(Paragraph::new(lines), area);
     }
 
-    
+    fn draw_field(&self, f: &mut Frame, area: Rect, title: &str, focused: bool) {
+        if area.width < 10 || area.height < 3 {
+            return;
+        }
+        let w = area.width as usize;
+        let inner = w - 2;
+        let label = format!(" {title} ");
+
+        let mut top = vec![Span::styled("┌", tui::border()), Span::styled("╌", tui::border())];
+        let lw = tui::width(&label);
+        if lw + 1 < inner {
+            top.push(Span::styled(label, tui::faint()));
+            top.push(Span::styled("╌".repeat(inner - 1 - lw), tui::border()));
+        } else {
+            top.push(Span::styled("╌".repeat(inner - 1), tui::border()));
+        }
+        top.push(Span::styled("┐", tui::border()));
+        f.render_widget(Paragraph::new(Line::from(top)), tui::band(area, area.y, 1));
+
+        let mut mid = vec![
+            Span::styled("╎", tui::border()),
+            Span::raw(" "),
+            Span::styled("> ", tui::brand()),
+        ];
+        let room = inner.saturating_sub(3);
+        let cursor = focused || self.query.is_empty();
+        let content;
+        if self.query.is_empty() {
+            // the border title already says what to type; keep the field bare
+            content = 1;
+            if cursor {
+                mid.push(Span::styled("▏", tui::brand()));
+            }
+        } else {
+            let shown = tui::tail(&self.query, room.saturating_sub(1));
+            content = tui::width(&shown) + usize::from(cursor);
+            mid.push(Span::styled(shown, tui::text()));
+            if cursor {
+                mid.push(Span::styled("▏", tui::brand()));
+            }
+        }
+        let fill = inner.saturating_sub(3).saturating_sub(content);
+        mid.push(Span::raw(" ".repeat(fill)));
+        mid.push(Span::styled("╎", tui::border()));
+        f.render_widget(
+            Paragraph::new(Line::from(mid)),
+            tui::band(area, area.y.saturating_add(1), 1),
+        );
+
+        let bottom = vec![
+            Span::styled("└", tui::border()),
+            Span::styled("╌".repeat(inner), tui::border()),
+            Span::styled("┘", tui::border()),
+        ];
+        f.render_widget(
+            Paragraph::new(Line::from(bottom)),
+            tui::band(area, area.y.saturating_add(2), 1),
+        );
+    }
+
+    fn result_widths(w: usize) -> [usize; 5] {
+        let kind = 6;
+        let eps = 4;
+        let year = 5;
+        let gaps = 8;
+        // the leading cell is the selection gutter
+        let rest = w.saturating_sub(1 + kind + eps + year + gaps);
+        let title = (rest * 56 / 100).max(12).min(rest.saturating_sub(8));
+        let genres = rest.saturating_sub(title);
+        [title, kind, eps, year, genres]
+    }
+
+    fn table_row(
+        cells: Vec<(String, Style)>,
+        widths: &[usize],
+        selected: bool,
+    ) -> Line<'static> {
+        let mut spans: Vec<Span> = Vec::new();
+        if selected {
+            spans.push(Span::styled(
+                "▎",
+                Style::default().bg(tui::SEL_BG).fg(tui::BRAND),
+            ));
+        } else {
+            spans.push(Span::raw(" "));
+        }
+        let gap_style = if selected {
+            Style::default().bg(tui::SEL_BG)
+        } else {
+            Style::default()
+        };
+        for (i, (cell, style)) in cells.iter().enumerate() {
+            let width = widths.get(i).copied().unwrap_or(0);
+            let mut st = *style;
+            if selected {
+                st = st.bg(tui::SEL_BG).fg(tui::FG).add_modifier(Modifier::BOLD);
+            }
+            spans.push(Span::styled(tui::pad(cell, width), st));
+            if i + 1 < widths.len() {
+                spans.push(Span::styled("  ", gap_style));
+            }
+        }
+        Line::from(spans)
+    }
+    //I will be doing all the tabs here
+    fn draw_results(&self, f: &mut Frame, area: Rect) {
+        let widths = Self::result_widths(area.width as usize);
+        let header = Self::table_row(
+            vec![
+                ("title".to_string(), tui::header()),
+                ("type".to_string(), tui::header()),
+                ("eps".to_string(), tui::header()),
+                ("year".to_string(), tui::header()),
+                ("genres".to_string(), tui::header()),
+            ],
+            &widths,
+            false,
+        );
+
+        let mut lines = vec![header];
+        lines.push(Line::from(Span::styled(
+            "─".repeat(area.width as usize),
+            tui::border(),
+        )));
+
+        let (start, end) = Self::page_bounds(self.hits.len(), self.sel);
+        let room = (area.height as usize).saturating_sub(3).max(1);
+        if self.hits.is_empty() {
+            lines.push(Line::from(Span::styled(
+                "  no matches · try another title, or a genre like isekai",
+                tui::faint(),
+            )));
+        } else {
+            for (i, idx) in self
+                .hits
+                .iter()
+                .enumerate()
+                .skip(start)
+                .take((end - start).min(room))
+            {
+                let Some(a) = self.anime(*idx) else { continue };
+                let rating = self.profile.rating_of(a.mal_id);
+                let title = if rating.is_some() {
+                    format!("★ {}", a.title)
+                } else {
+                    a.title.clone()
+                };
+                lines.push(Self::table_row(
+                    vec![
+                        (title, star_style(rating)),
+                        (a.kind.clone(), tui::dim()),
+                        (
+                            a.episodes
+                                .map(|e| e.to_string())
+                                .unwrap_or_else(|| "—".into()),
+                            tui::dim(),
+                        ),
+                        (
+                            a.year
+                                .map(|y| y.to_string())
+                                .unwrap_or_else(|| "—".into()),
+                            tui::dim(),
+                        ),
+                        (a.genres.iter().take(3).cloned().collect::<Vec<_>>().join(", "), tui::faint()),
+                    ],
+                    &widths,
+                    i == self.sel,
+                ));
+            }
+        }
+        f.render_widget(Paragraph::new(lines), area);
+    }
+    //Doing picks tab :sob 
+    fn draw_vibes(&self, f: &mut Frame, area: Rect) {
+        let mut lines: Vec<Line> = Vec::new();
+
+        let mut chips: Vec<Span> = vec![Span::styled("  mood  ", tui::faint())];
+        for (i, (name, _)) in catalog::VIBES.iter().enumerate() {
+            if i > 0 {
+                chips.push(Span::styled("  ·  ", tui::faint()));
+            }
+            if i == self.vibe_sel {
+                chips.push(Span::styled(
+                    format!(" {name} "),
+                    Style::default()
+                        .bg(tui::BRAND)
+                        .fg(tui::BG)
+                        .add_modifier(Modifier::BOLD),
+                ));
+            } else {
+                chips.push(Span::styled(*name, tui::dim()));
+            }
+        }
+        lines.push(Line::from(chips));
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![
+            Span::styled("  starters  ", tui::faint()),
+            Span::styled("three at a time · n for more", tui::faint()),
+        ]));
+
+        let widths = Self::result_widths(area.width as usize);
+        if self.vibe_picks.is_empty() {
+            lines.push(Line::from(Span::styled(
+                "  nothing matched this mood in the catalog",
+                tui::faint(),
+            )));
+        }
+        for (i, idx) in self.vibe_picks.iter().enumerate() {
+            let Some(a) = self.anime(*idx) else { continue };
+            let rating = self.profile.rating_of(a.mal_id);
+            lines.push(Self::table_row(
+                vec![
+                    (
+                        if rating.is_some() {
+                            format!("★ {}", a.title)
+                        } else {
+                            a.title.clone()
+                        },
+                        star_style(rating),
+                    ),
+                    (a.kind.clone(), tui::dim()),
+                    (
+                        a.episodes
+                            .map(|e| e.to_string())
+                            .unwrap_or_else(|| "—".into()),
+                        tui::dim(),
+                    ),
+                    (
+                        a.year
+                            .map(|y| y.to_string())
+                            .unwrap_or_else(|| "—".into()),
+                        tui::dim(),
+                    ),
+                    (a.genres.iter().take(3).cloned().collect::<Vec<_>>().join(", "), tui::faint()),
+                ],
+                &widths,
+                i == self.pick_sel,
+            ));
+        }
+        f.render_widget(Paragraph::new(lines), area);
+    }
+    //Doing picks tab
+    fn draw_picks(&self, f: &mut Frame, area: Rect) {
+        let mut lines: Vec<Line> = Vec::new();
+        lines.push(Line::from(vec![
+            Span::styled("  picks  ", tui::header()),
+            Span::styled(
+                format!(
+                    "{} saved · {} from your taste",
+                    self.profile.favorites.len(),
+                    self.recs.len()
+                ),
+                tui::dim(),
+            ),
+        ]));
+        lines.push(Line::from(Span::styled(
+            "─".repeat(area.width as usize),
+            tui::border(),
+        )));
+
+        if self.recs.is_empty() {
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled(
+                "  no picks yet · save a few favourites from search, then press r",
+                tui::faint(),
+            )));
+            f.render_widget(Paragraph::new(lines), area);
+            return;
+        }
+
+        let w = area.width as usize;
+        let score_w = 6;
+        let kind_w = 6;
+        let rest = w.saturating_sub(1 + score_w + kind_w + 8);
+        let title_w = (rest * 46 / 100).max(12);
+        let why_w = rest.saturating_sub(title_w);
+        let widths = [title_w, why_w, kind_w, score_w];
+
+        let header = Self::table_row(
+            vec![
+                ("title".to_string(), tui::header()),
+                ("why it fits".to_string(), tui::header()),
+                ("type".to_string(), tui::header()),
+                ("score".to_string(), tui::header()),
+            ],
+            &widths,
+            false,
+        );
+        lines.push(header);
+
+        let (start, end) = Self::page_bounds(self.recs.len(), self.pick_sel);
+        let room = (area.height as usize).saturating_sub(4).max(1);
+        for (i, rec) in self
+            .recs
+            .iter()
+            .enumerate()
+            .skip(start)
+            .take((end - start).min(room))
+        {
+            let Some(a) = self.anime(rec.idx) else { continue };
+            let rating = self.profile.rating_of(a.mal_id);
+            lines.push(Self::table_row(
+                vec![
+                    (
+                        if rating.is_some() {
+                            format!("★ {}", a.title)
+                        } else {
+                            a.title.clone()
+                        },
+                        star_style(rating),
+                    ),
+                    (rec.shared.join(" · "), tui::faint()),
+                    (a.kind.clone(), tui::dim()),
+                    (format!("{:.1}", rec.score), tui::brand2()),
+                ],
+                &widths,
+                i == self.pick_sel,
+            ));
+        }
+        f.render_widget(Paragraph::new(lines), area);
+    }
+    //Doing details tabs
+    fn draw_details(&self, f: &mut Frame, area: Rect) {
+        let Some(anime) = self.detail_idx.and_then(|i| self.anime(i)) else {
+            f.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    "  open a title from search, vibes or picks to see it here",
+                    tui::faint(),
+                ))),
+                area,
+            );
+            return;
+        };
+
+        let mut lines: Vec<Line> = Vec::new();
+        lines.push(Line::from(Span::styled(
+            format!("  {}", anime.title),
+            tui::brand(),
+        )));
+
+        let mut meta = vec![Span::raw("  "), Span::styled(anime.kind.clone(), tui::dim())];
+        if let Some(year) = anime.year {
+            meta.push(Span::styled(format!("  ·  {year}"), tui::dim()));
+        }
+        if let Some(eps) = anime.episodes {
+            meta.push(Span::styled(format!("  ·  {eps} eps"), tui::dim()));
+        }
+        meta.push(Span::styled(format!("  ·  mal {}", anime.mal_id), tui::faint()));
+        if let Some(id) = anime.anilist_id {
+            meta.push(Span::styled(format!("  ·  anilist {id}"), tui::faint()));
+        }
+        lines.push(Line::from(meta));
+
+        if !anime.genres.is_empty() {
+            let shown: Vec<&str> = anime.genres.iter().take(8).map(|g| g.as_str()).collect();
+            let extra = anime.genres.len().saturating_sub(shown.len());
+            let mut tags = shown.join(" · ");
+            if extra > 0 {
+                tags.push_str(&format!(" · +{extra} more"));
+            }
+            lines.push(Line::from(vec![
+                Span::styled("  genres  ", tui::faint()),
+                Span::styled(tags, tui::dim()),
+            ]));
+        }
+        let rating = self.profile.rating_of(anime.mal_id);
+        lines.push(Line::from(vec![
+            Span::raw("  "),
+            Span::styled(
+                match rating {
+                    Some(r) => format!("you rated this {} · s changes it", r.label()),
+                    None => "not rated yet · s rates it".to_string(),
+                },
+                if rating.is_some() {
+                    star_style(rating)
+                } else {
+                    tui::faint()
+                },
+            ),
+        ]));
+        lines.push(Line::from(""));
+
+        match &self.detail {
+            DetailState::Loading => {
+                lines.push(Line::from(Span::styled(
+                    "  fetching synopsis and streams from AniList…",
+                    tui::faint(),
+                )));
+            }
+            DetailState::Failed => {
+                lines.push(Line::from(Span::styled(
+                    "  could not reach AniList · r retries",
+                    tui::dim(),
+                )));
+            }
+            DetailState::Idle => {
+                lines.push(Line::from(Span::styled(
+                    "  press r to fetch the synopsis",
+                    tui::faint(),
+                )));
+            }
+            DetailState::Ready(details) => {
+                lines.push(Line::from(Span::styled("  synopsis", tui::header())));
+                if details.synopsis.is_empty() {
+                    lines.push(Line::from(Span::styled(
+                        "  no synopsis on AniList for this title",
+                        tui::faint(),
+                    )));
+                } else {
+                    for row in details.synopsis.lines() {
+                        lines.push(Line::from(Span::styled(
+                            format!("  {}", row.trim()),
+                            tui::dim(),
+                        )));
+                    }
+                }
+                if !details.streams.is_empty() {
+                    lines.push(Line::from(""));
+                    lines.push(Line::from(Span::styled("  streams", tui::header())));
+                    for (site, url) in &details.streams {
+                        lines.push(Line::from(vec![
+                            Span::raw("  "),
+                            Span::styled(tui::pad(site, 16), tui::text()),
+                            Span::styled(url.clone(), tui::faint()),
+                        ]));
+                    }
+                }
+            }
+        }
+
+        f.render_widget(
+            Paragraph::new(lines)
+                .wrap(Wrap { trim: false })
+                .scroll((self.scroll, 0)),
+            area,
+        );
+    }
+
+    // FINALLY THE EHLP TAB IM SO DONEEE
+    fn draw_help(&self, f: &mut Frame, area: Rect) {
+        let sections: [(&str, &[(&str, &str)]); 5] = [
+            (
+                "global",
+                &[
+                    ("1-5", "switch screen"),
+                    ("tab", "next screen"),
+                    ("?", "help"),
+                    ("ctrl+c", "quit"),
+                ],
+            ),
+            (
+                "search",
+                &[
+                    ("type", "filter the catalog"),
+                    ("up / down", "move"),
+                    ("enter", "save or remove a pick"),
+                    ("ctrl+o", "details"),
+                    ("esc", "clear"),
+                ],
+            ),
+            (
+                "vibes",
+                &[
+                    ("left / right", "change mood"),
+                    ("up / down", "choose a starter"),
+                    ("n", "three more"),
+                    ("enter", "save a pick"),
+                    ("d", "details"),
+                ],
+            ),
+            (
+                "picks",
+                &[
+                    ("r", "rebuild from your taste"),
+                    ("enter", "save one"),
+                    ("x", "clear your picks"),
+                    ("d", "details"),
+                ],
+            ),
+            (
+                "details",
+                &[
+                    ("s", "save or remove"),
+                    ("r", "refetch from AniList"),
+                    ("j / k", "scroll"),
+                    ("esc", "back"),
+                ],
+            ),
+        ];
+
+        let mut lines: Vec<Line> = Vec::new();
+        for (i, (name, rows)) in sections.iter().enumerate() {
+            if i > 0 {
+                lines.push(Line::from(""));
+            }
+            lines.push(Line::from(vec![
+                Span::raw("  "),
+                Span::styled(*name, tui::header()),
+            ]));
+            for (key, label) in rows.iter() {
+                lines.push(Line::from(vec![
+                    Span::raw("    "),
+                    Span::styled(tui::pad(key, 12), tui::brand2()),
+                    Span::styled(*label, tui::dim()),
+                ]));
+            }
+        }
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![
+            Span::raw("  "),
+            Span::styled("aroe", tui::brand2()),
+            Span::styled(" · a cozy terminal anime recommender · your picks stay local", tui::faint()),
+        ]));
+
+        f.render_widget(Paragraph::new(lines), area);
+    }
+    //Ima make some hints for the reviewers
+
+    fn draw_hints(&self, f: &mut Frame, area: Rect) {
+        let parts: Vec<(&str, &str)> = match self.screen {
+            Screen::Search => vec![
+                ("type", "search"),
+                ("↓", "menu"),
+                ("←→", "page"),
+                ("enter", "rate"),
+                ("ctrl+o", "details"),
+            ],
+            Screen::Vibes => vec![
+                ("←→", "mood"),
+                ("n", "more"),
+                ("enter", "rate"),
+                ("d", "details"),
+            ],
+            Screen::Picks => vec![
+                ("←→", "page"),
+                ("r", "rebuild"),
+                ("enter", "rate"),
+                ("x", "clear"),
+                ("d", "details"),
+            ],
+            Screen::Details => vec![
+                ("s", "rate"),
+                ("r", "refetch"),
+                ("j/k", "scroll"),
+                ("esc", "back"),
+            ],
+            Screen::Help => vec![("esc", "back"), ("tab", "screens"), ("ctrl+c", "quit")],
+        };
+
+        let mut spans: Vec<Span> = vec![Span::raw(" ")];
+        for (i, (key, label)) in parts.iter().enumerate() {
+            if i > 0 {
+                spans.push(Span::styled("   ", tui::faint()));
+            }
+            spans.push(Span::styled(*key, tui::brand2()));
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(*label, tui::faint()));
+        }
+        f.render_widget(Paragraph::new(Line::from(spans)), area);
+    }
+
+    fn draw_footer(&self, f: &mut Frame, area: Rect) {
+        let (label, value) = match self.screen {
+            Screen::Search | Screen::Help => (
+                "catalog",
+                match &self.catalog {
+                    Some(c) => format!(
+                        "{} · {} titles",
+                        short_path(&self.catalog_path),
+                        c.len()
+                    ),
+                    None => format!(
+                        "{} · catalog missing, set AROE_DATA",
+                        short_path(&self.catalog_path)
+                    ),
+                },
+            ),
+            _ => (
+                "profile",
+                format!(
+                    "{} · {} saved",
+                    short_path(&self.profile_path),
+                    self.profile.favorites.len()
+                ),
+            ),
+        };
+        let mut spans = vec![
+            Span::raw(" "),
+            Span::styled(label, tui::label()),
+            Span::raw("   "),
+            Span::styled(value.clone(), tui::dim()),
+        ];
+        if let Some(pager) = self.pager_text() {
+            let used = 1 + tui::width(label) + 3 + tui::width(&value) + tui::width(&pager) + 1;
+            let gap = (area.width as usize).saturating_sub(used);
+            spans.push(Span::raw(" ".repeat(gap)));
+            spans.push(Span::styled(pager, tui::faint()));
+        }
+        f.render_widget(Paragraph::new(Line::from(spans)), area);
+    }
+
+    /// "11-20 of 240 · page 2/24" for the screens that page ten at a time.
+    fn pager_text(&self) -> Option<String> {
+        let (len, sel) = match self.screen {
+            Screen::Search if !self.hits.is_empty() => (self.hits.len(), self.sel),
+            Screen::Picks if !self.recs.is_empty() => (self.recs.len(), self.pick_sel),
+            _ => return None,
+        };
+        let (start, end) = Self::page_bounds(len, sel);
+        Some(format!(
+            "{}-{} of {}  ·  page {}/{}",
+            start + 1,
+            end,
+            len,
+            start / PAGE + 1,
+            len.div_ceil(PAGE)
+        ))
+    }
+}
+
+fn short_path(path: &std::path::Path) -> String {
+    let text = path.display().to_string();
+    match std::env::var("HOME") {
+        Ok(home) if !home.is_empty() => text.replace(&home, "~"),
+        _ => text,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    fn row_text(buf: &ratatui::buffer::Buffer, y: u16) -> String {
+        (0..buf.area.width)
+            .map(|x| buf[(x, y)].symbol().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn active_tab_and_banner_are_painted() {
+        let mut app = App::new();
+        let mut terminal = Terminal::new(TestBackend::new(120, 50)).unwrap();
+        terminal.draw(|f| app.draw(f)).unwrap();
+        let buf = terminal.backend().buffer().clone();
+
+        let tabs = row_text(&buf, 0);
+        assert!(tabs.contains("1 search"), "tab bar: {tabs:?}");
+        assert!(tabs.contains("5 help"), "tab bar: {tabs:?}");
+        let x = tabs.find("1 search").expect("search tab") as u16;
+        assert_eq!(buf[(x, 0)].style().bg, Some(tui::BRAND));
+        assert_eq!(buf[(x, 0)].style().fg, Some(tui::BG));
+
+        let mut found_art = false;
+        let mut found_letters = false;
+        for y in 0..buf.area.height {
+            let line = row_text(&buf, y);
+            if line.contains("=*********#=") {
+                found_art = true;
+            }
+            if line.contains("▄▀▀▀▄ █▀▀▀▄ ▄▀▀▀▄ █▀▀▀▀") {
+                found_letters = true;
+            }
+        }
+        assert!(found_art, "the bolt art should be drawn");
+        assert!(found_letters, "the wordmark should render intact");
+    }
+
+    #[test]
+    fn pages_hold_ten_rows() {
+        assert_eq!(App::page_bounds(0, 0), (0, 0));
+        assert_eq!(App::page_bounds(240, 0), (0, 10));
+        assert_eq!(App::page_bounds(240, 13), (10, 20));
+        assert_eq!(App::page_bounds(23, 22), (20, 23));
+    }
+
+    #[test]
+    fn rating_dialog_saves_the_choice() {
+        let mut app = App::new();
+        app.profile_path = std::env::temp_dir().join("aroe-test-profile.json");
+        let _ = std::fs::remove_file(&app.profile_path);
+        app.profile = catalog::Profile::default();
+        app.query = "frieren".to_string();
+        app.refresh_hits();
+
+        app.on_key(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
+        assert!(app.rating.is_some(), "enter should open the rating chooser");
+
+        app.on_key(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::NONE));
+        assert!(app.rating.is_none(), "rating closes the chooser");
+
+        let idx = app.hits[0];
+        let mal_id = app.catalog.as_ref().unwrap()[idx].mal_id;
+        assert_eq!(app.profile.rating_of(mal_id), Some(catalog::Rating::Amazing));
+
+        // rating again from the chooser replaces it, and the file round-trips
+        app.open_rating(idx);
+        assert_eq!(app.rating.map(|d| d.sel), Some(0));
+        app.on_key(KeyEvent::new(KeyCode::Char('b'), KeyModifiers::NONE));
+        assert_eq!(app.profile.rating_of(mal_id), Some(catalog::Rating::Bad));
+        let saved = catalog::Profile::load(&app.profile_path);
+        assert_eq!(saved.rating_of(mal_id), Some(catalog::Rating::Bad));
+
+        let _ = std::fs::remove_file(&app.profile_path);
+    }
+
+    #[test]
+    fn down_walks_the_menu_and_enter_opens_it() {
+        let mut app = App::new();
+        let down = KeyEvent::new(KeyCode::Down, KeyModifiers::NONE);
+        let up = KeyEvent::new(KeyCode::Up, KeyModifiers::NONE);
+        let enter = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+
+        app.on_key(down);
+        assert_eq!(app.menu_focus, Some(0));
+        app.on_key(down);
+        assert_eq!(app.menu_focus, Some(1));
+        app.on_key(enter);
+        assert_eq!(app.screen, Screen::Picks);
+
+        // back on search, the menu starts unfocused and returns there on up
+        app.screen = Screen::Search;
+        app.menu_focus = None;
+        app.on_key(down);
+        app.on_key(up);
+        assert_eq!(app.menu_focus, None);
+        assert_eq!(app.query, "");
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let arg = std::env::args().nth(1).unwrap_or_default();
+    match arg.as_str() {
+        "-V" | "--version" | "version" => {
+            println!("aroe {}", env!("CARGO_PKG_VERSION"));
+            return Ok(());
+        }
+        "stats" => {
+            let path = catalog::default_catalog_path();
+            let list = catalog::load(&path)?;
+            println!("catalog {} · {} titles", path.display(), list.len());
+            return Ok(());
+        }
+        "details" => {
+            let Some(title) = std::env::args().nth(2) else {
+                println!("usage: resty details <title>");
+                return Ok(());
+            };
+            let path = catalog::default_catalog_path();
+            let list = catalog::load(&path)?;
+            let Some(idx) = catalog::find(&list, &title) else {
+                println!("no match for {title:?} in the catalog");
+                return Ok(());
+            };
+            let anime = &list[idx];
+            println!("{} · {} · {}", anime.title, anime.kind, anime.year.map(|y| y.to_string()).unwrap_or_else(|| "year?".into()));
+            match catalog::cached_details(&catalog::details_key(anime)).or_else(|| catalog::fetch_details(anime)) {
+                Some(details) => {
+                    catalog::store_details(&catalog::details_key(anime), &details);
+                    if !details.synopsis.is_empty() {
+                        println!("\n{}", details.synopsis);
+                    }
+                    if !details.streams.is_empty() {
+                        println!();
+                        for (site, url) in &details.streams {
+                            println!("{site:<16}{url}");
+                        }
+                    }
+                }
+                None => println!("\ncould not reach AniList for this title"),
+            }
+            return Ok(());
+        }
+        "-h" | "--help" | "help" => {
+            println!(
+                "aroe — a cozy terminal anime recommender\n\n\
+                 usage: resty                  open the tui\n\
+                 \x20      resty stats            catalog path + title count\n\
+                 \x20      resty details <title>  synopsis + streams for one title\n\n\
+                 in the tui: 1-5 or tab for screens, ? for help, ctrl+c to quit\n"
+            );
+            return Ok(());
+        }
+        _ => {}
+    }
+
+    let mut app = App::new();
+    let mut terminal = ratatui::init();
+    let result = app.run(&mut terminal);
+    ratatui::restore();
+    result
+}
