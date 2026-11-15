@@ -1,21 +1,22 @@
-//Main logic/app
-//YH this gon be imports
+
 mod catalog;
 mod tui;
-use std::iter::Copied;
+
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 use std::thread;
 use std::time::Duration;
+
 use crossterm::event::{self, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier,Style};
-use ratatui::text::{Line,Span};
-use ratatui::widgets::{Block,Borders,Clear,Paragraph,Wrap};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Wrap};
+
 use catalog::{Anime, Details, Profile, Rating, Rec};
 
-#[derive(Debug,Clone,Copy,PartialEq,Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Screen {
     Search,
     Vibes,
@@ -54,9 +55,10 @@ enum DetailState {
 }
 
 const MENU: [Screen; 4] = [Screen::Vibes, Screen::Picks, Screen::Details, Screen::Help];
-const PAGE: usize=10;
 
-#[derive(Clone,Copy)]
+const PAGE: usize = 10;
+
+#[derive(Clone, Copy)]
 struct RatingDialog {
     idx: usize,
     sel: usize,
@@ -154,7 +156,6 @@ impl App {
         Ok(())
     }
 
-    // There is going to be a lot of functions i think this is the best way to do it
 
     fn anime(&self, idx: usize) -> Option<&Anime> {
         self.catalog.as_ref().and_then(|c| c.get(idx))
@@ -175,6 +176,7 @@ impl App {
             Screen::Help => None,
         }
     }
+    //ima add a bunch of features like removing the picks and ratings etc
 
     fn open_rating(&mut self, idx: usize) {
         let Some(anime) = self.anime(idx) else { return };
@@ -183,7 +185,7 @@ impl App {
             .rating_of(anime.mal_id)
             .and_then(|r| Rating::ALL.iter().position(|x| *x == r))
             .unwrap_or(0);
-        self.rating=Some(RatingDialog { idx, sel });
+        self.rating = Some(RatingDialog { idx, sel });
     }
 
     fn pick_rating(&mut self, idx: usize, rating: Rating) {
@@ -246,7 +248,7 @@ impl App {
         self.pick_sel = self.pick_sel.min(self.recs.len().saturating_sub(1));
     }
 
-    n go(&mut self, screen: Screen) {
+    fn go(&mut self, screen: Screen) {
         if screen != Screen::Details {
             self.prev = self.screen;
         }
@@ -323,6 +325,8 @@ impl App {
         }
     }
 
+
+     //sTARTING ALL THE KEYBINDS STUFFS need them  i got an idea
     fn on_key(&mut self, key: KeyEvent) {
         if key.modifiers.contains(KeyModifiers::CONTROL) {
             match key.code {
@@ -369,7 +373,7 @@ impl App {
                 return;
             }
         }
-
+        //Setting up all the keybinds :(
         match self.screen {
             Screen::Search => match key.code {
                 KeyCode::Esc => {
@@ -453,7 +457,6 @@ impl App {
                 KeyCode::Esc => self.go(Screen::Search),
                 _ => {}
             },
-            //Keybinds for the tui forgot to add this before vibes
             Screen::Picks => match key.code {
                 KeyCode::Down => {
                     self.pick_sel = (self.pick_sel + 1).min(self.recs.len().saturating_sub(1));
@@ -466,18 +469,18 @@ impl App {
                     }
                 }
                 KeyCode::Enter => {
-                    if let Some(idx)=self.current_idx() {
+                    if let Some(idx) = self.current_idx() {
                         self.open_rating(idx);
                     }
                 }
-                KeyCode::Char('r')=> self.rebuild_recs(),
-                KeyCode::Char('x')=> {
+                KeyCode::Char('r') => self.rebuild_recs(),
+                KeyCode::Char('x') => {
                     self.profile.favorites.clear();
                     self.profile.save(&self.profile_path);
-                    self.rebuild_rec();
+                    self.rebuild_recs();
                 }
                 KeyCode::Char('d') => {
-                    if let Some(idx)=self.current_idx() {
+                    if let Some(idx) = self.current_idx() {
                         self.open_details(idx);
                     }
                 }
@@ -486,11 +489,281 @@ impl App {
             },
             Screen::Details => match key.code {
                 KeyCode::Esc => {
-                    let back=self.prev;
-                    self.screen =back;
+                    let back = self.prev;
+                    self.screen = back;
                 }
-                KeyCode::Char('s')  => {
-                    if let Some(idx)=self.detail_idx {
+                KeyCode::Char('s') => {
+                    if let Some(idx) = self.detail_idx {
                         self.open_rating(idx);
                     }
                 }
+                KeyCode::Char('r') => {
+                    if let Some(idx) = self.detail_idx {
+                        self.open_details(idx);
+                    }
+                }
+                KeyCode::Down | KeyCode::Char('j') => self.scroll = self.scroll.saturating_add(1),
+                KeyCode::Up | KeyCode::Char('k') => self.scroll = self.scroll.saturating_sub(1),
+                _ => {}
+            },
+            Screen::Help => match key.code {
+                KeyCode::Esc | KeyCode::Char('q') => {
+                    let back = self.prev;
+                    self.screen = back;
+                }
+                _ => {}
+            },
+        }
+    }
+
+
+
+    fn draw(&mut self, f: &mut Frame) {
+        let area = f.area();
+        f.render_widget(
+            Block::default().style(Style::default().bg(tui::BG).fg(tui::FG)),
+            area,
+        );
+
+        let col = tui::column(area);
+        let rows = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Min(6),
+                Constraint::Length(1),
+                Constraint::Length(1),
+            ])
+            .split(col);
+
+        self.draw_tabs(f, rows[0]);
+        match self.screen {
+            Screen::Search => self.draw_search(f, rows[2]),
+            Screen::Vibes => self.draw_vibes(f, rows[2]),
+            Screen::Picks => self.draw_picks(f, rows[2]),
+            Screen::Details => self.draw_details(f, rows[2]),
+            Screen::Help => self.draw_help(f, rows[2]),
+        }
+        if let Some(dialog) = self.rating {
+            self.draw_rating_dialog(f, rows[2], dialog);
+        }
+        self.draw_hints(f, rows[3]);
+        self.draw_footer(f, rows[4]);
+    }
+
+    fn draw_rating_dialog(&self, f: &mut Frame, area: Rect, dialog: RatingDialog) {
+        let Some(anime) = self.anime(dialog.idx) else { return };
+        let current = self.profile.rating_of(anime.mal_id);
+        let saved = current.is_some();
+        let rows = Rating::ALL.len() + usize::from(saved);
+        let width = area.width.min(48);
+        let height = rows as u16 + 2;
+        if width < 24 || area.height < height {
+            return;
+        }
+        let rect = Rect {
+            x: area.x + (area.width - width) / 2,
+            y: area.y + (area.height - height) / 2,
+            width,
+            height,
+        };
+        f.render_widget(Clear, rect);
+
+        let mut lines: Vec<Line> = Vec::new();
+        for (i, rating) in Rating::ALL.iter().enumerate() {
+            let selected = i == dialog.sel;
+            let mut spans = if selected {
+                vec![Span::styled(
+                    "▎",
+                    Style::default().bg(tui::SEL_BG).fg(tui::BRAND),
+                )]
+            } else {
+                vec![Span::raw(" ")]
+            };
+            let (label, note) = if selected {
+                (
+                    Style::default()
+                        .bg(tui::SEL_BG)
+                        .fg(tui::FG)
+                        .add_modifier(Modifier::BOLD),
+                    Style::default().bg(tui::SEL_BG).fg(tui::MUTED),
+                )
+            } else {
+                (tui::text(), tui::faint())
+            };
+            spans.push(Span::styled(tui::pad(rating.label(), 11), label));
+            let mark = if current == Some(*rating) { "current" } else { "" };
+            spans.push(Span::styled(
+                format!("{}   {}", rating_key(*rating), mark),
+                note,
+            ));
+            lines.push(Line::from(spans));
+        }
+        if saved {
+            let selected = dialog.sel == Rating::ALL.len();
+            let base = if selected {
+                Style::default().bg(tui::SEL_BG).fg(tui::FG)
+            } else {
+                tui::faint()
+            };
+            lines.push(Line::from(vec![
+                Span::styled(
+                    if selected { "▎" } else { " " },
+                    if selected {
+                        Style::default().bg(tui::SEL_BG).fg(tui::BRAND)
+                    } else {
+                        Style::default()
+                    },
+                ),
+                Span::styled("remove pick", base),
+                Span::styled(if selected { "   x" } else { "" }, base),
+            ]));
+        }
+
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(tui::brand2())
+            .style(Style::default().bg(tui::BG))
+            .title(Span::styled(
+                format!(
+                    " {} ",
+                    tui::fit(&anime.title, (width as usize).saturating_sub(4))
+                ),
+                tui::brand(),
+            ));
+        f.render_widget(Paragraph::new(lines).block(block), rect);
+    }
+
+    fn draw_tabs(&self, f: &mut Frame, area: Rect) {
+        let mut spans: Vec<Span> = Vec::new();
+        for (i, name) in tui::TABS.iter().enumerate() {
+            let active = i == self.screen.index();
+            let text = format!("{} {}", i + 1, name);
+            if active {
+                spans.push(Span::styled(
+                    format!(" {text} "),
+                    Style::default()
+                        .bg(tui::BRAND)
+                        .fg(tui::BG)
+                        .add_modifier(Modifier::BOLD),
+                ));
+            } else {
+                spans.push(Span::styled(text, tui::dim()));
+            }
+            if i + 1 < tui::TABS.len() {
+                spans.push(Span::raw("   "));
+            }
+        }
+        f.render_widget(Paragraph::new(Line::from(spans)), area);
+    }
+
+    fn draw_search(&self, f: &mut Frame, area: Rect) {
+        let field_title = "search a title, or a genre like isekai";
+
+        if self.query.is_empty() {
+            let art = tui::bolt_art();
+            let art_rows = art.len() as u16;
+            let compact_total = 17u16;
+            let full_total = compact_total + art_rows + 1;
+            let full = area.height >= full_total;
+            let total = if full { full_total } else { compact_total };
+            let mut y = area
+                .y
+                .saturating_add(area.height.saturating_sub(total) / 2);
+
+            f.render_widget(
+                Paragraph::new(Line::from(Span::styled(tui::greeting(), tui::dim())))
+                    .alignment(Alignment::Center),
+                tui::band(area, y, 1),
+            );
+            y = y.saturating_add(2);
+
+            if full {
+                f.render_widget(
+                    Paragraph::new(art).alignment(Alignment::Center),
+                    tui::band(area, y, art_rows),
+                );
+                y = y.saturating_add(art_rows + 1);
+            }
+
+            f.render_widget(
+                Paragraph::new(tui::wordmark()).alignment(Alignment::Center),
+                tui::band(area, y, tui::WORDMARK_ROWS),
+            );
+            y = y.saturating_add(tui::WORDMARK_ROWS + 1);
+
+        
+            // A little more tui stuff this my catcher lol
+            f.render_widget(
+                Paragraph::new(Line::from(Span::styled(
+                    "you name it, the bolt fetches it",
+                    tui::dim(),
+                )))
+                .alignment(Alignment::Center),
+                tui::band(area, y, 1),
+            );
+            y = y.saturating_add(2);
+
+            self.draw_field(f, tui::band(area, y, 3), field_title, true);
+            y = y.saturating_add(4);
+
+            self.draw_menu(f, tui::band(area, y, 4));
+            return;
+        }
+
+        let rows = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Length(1), Constraint::Min(1)])
+            .split(area);
+
+        self.draw_field(f, rows[0], field_title, true);
+        self.draw_results(f, rows[2]);
+    }
+
+    // Menu bar stuff to start ima js cal it draw instead of select
+    fn draw_menu(&self, f: &mut Frame, area: Rect) {
+        let saved = self.profile.favorites.len();
+        let rows: [(&str, String); 4] = [
+            ("vibes", "pick a mood · three hand-picked starters".to_string()),
+            (
+                "picks",
+                format!("{saved} saved · {} picks from your taste", self.recs.len()),
+            ),
+            ("details", "synopsis · streaming links from AniList".to_string()),
+            ("help", "keys and about".to_string()),
+        ];
+        let lines: Vec<Line> = rows
+            .iter()
+            .enumerate()
+            .map(|(i, (name, blurb))| {
+                let selected = self.menu_focus == Some(i);
+                let mut spans = Vec::new();
+                if selected {
+                    spans.push(Span::styled(
+                        "▎ ",
+                        Style::default().bg(tui::SEL_BG).fg(tui::BRAND),
+                    ));
+                } else {
+                    spans.push(Span::raw("  "));
+                }
+                let (label, note) = if selected {
+                    (
+                        Style::default()
+                            .bg(tui::SEL_BG)
+                            .fg(tui::FG)
+                            .add_modifier(Modifier::BOLD),
+                        Style::default().bg(tui::SEL_BG).fg(tui::FG),
+                    )
+                } else {
+                    (tui::text(), tui::dim())
+                };
+                spans.push(Span::styled(tui::pad(name, 12), label));
+                spans.push(Span::styled(blurb.clone(), note));
+                Line::from(spans)
+            })
+            .collect();
+        f.render_widget(Paragraph::new(lines), area);
+    }
+
+    
