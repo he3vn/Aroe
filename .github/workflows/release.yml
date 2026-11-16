@@ -83,7 +83,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.event.inputs.tag_name || github.ref_name }}"
-          echo "Publishing release for $TAG"
+          RAW_TAG="${{ github.event.inputs.tag_name || github.ref_name }}"
+          # Git tags cannot have spaces — sanitize it automatically
+          TAG=$(echo "$RAW_TAG" | tr -s ' ' '-' | tr -cd '[:alnum:]._-')
+          if [ -z "$TAG" ]; then TAG="v1.0.0"; fi
+          echo "Sanitized tag: $TAG"
           gh release create "$TAG" release_assets/* --title "Release $TAG" --notes "Aroe release $TAG" || \
           gh release upload "$TAG" release_assets/* --clobber
