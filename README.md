@@ -36,7 +36,7 @@
 - **cache, not spam** — catalog data is saved locally, so reruns are instant and the public APIs don't get hammered.
 - **one rust binary, no electron** — runs in whatever terminal you already use.
 
-> aroe is early. catalog search works today; the recommender is being built in the open.
+> yh it does a lot.
 
 ---
 
