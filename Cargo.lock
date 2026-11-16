@@ -51,6 +51,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "aroe"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "crossterm",
+ "ratatui",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "unicode-width",
+]
+
+[[package]]
 name = "atomic"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1637,20 +1651,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "webpki-roots",
-]
-
-[[package]]
-name = "resty"
-version = "0.4.0"
-dependencies = [
- "anyhow",
- "chrono",
- "crossterm",
- "ratatui",
- "reqwest",
- "serde",
- "serde_json",
- "unicode-width",
 ]
 
 [[package]]

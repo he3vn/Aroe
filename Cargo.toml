@@ -1,12 +1,12 @@
 [package]
-name = "resty"
-version = "0.4.0"
+name = "aroe"
+version = "1.0.0"
 edition = "2024"
 description = "A cozy terminal anime recommender"
 license = "MIT"
 
 [[bin]]
-name = "resty"
+name = "aroe"
 path = "src/main.rs"
 
 [dependencies]

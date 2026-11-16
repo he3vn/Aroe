@@ -16,13 +16,13 @@ jobs:
         include:
           - os: macos-latest
             artifact_name: aroe-macos
-            binary_name: resty
+            binary_name: aroe
           - os: ubuntu-latest
             artifact_name: aroe-linux
-            binary_name: resty
+            binary_name: aroe
           - os: windows-latest
             artifact_name: aroe-windows.exe
-            binary_name: resty.exe
+            binary_name: aroe.exe
 
     runs-on: ${{ matrix.os }}
 

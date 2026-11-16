@@ -1512,7 +1512,7 @@ fn main() -> anyhow::Result<()> {
         }
         "details" => {
             let Some(title) = std::env::args().nth(2) else {
-                println!("usage: resty details <title>");
+                println!("usage: aroe details <title>");
                 return Ok(());
             };
             let path = catalog::default_catalog_path();
@@ -1543,9 +1543,9 @@ fn main() -> anyhow::Result<()> {
         "-h" | "--help" | "help" => {
             println!(
                 "aroe — a cozy terminal anime recommender\n\n\
-                 usage: resty                  open the tui\n\
-                 \x20      resty stats            catalog path + title count\n\
-                 \x20      resty details <title>  synopsis + streams for one title\n\n\
+                 usage: aroe                  open the tui\n\
+                 \x20      aroe stats            catalog path + title count\n\
+                 \x20      aroe details <title>  synopsis + streams for one title\n\n\
                  in the tui: 1-5 or tab for screens, ? for help, ctrl+c to quit\n"
             );
             return Ok(());
