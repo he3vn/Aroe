@@ -102,11 +102,16 @@ pub fn default_catalog_path() -> PathBuf {
     if let Ok(p) = std::env::var("AROE_DATA") {
         return PathBuf::from(p);
     }
-    let mut candidates = vec![PathBuf::from("data/data.json")];
+    let mut candidates = vec![
+        PathBuf::from("data/data.json"),
+        PathBuf::from("data.json"),
+    ];
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             candidates.push(dir.join("data/data.json"));
+            candidates.push(dir.join("data.json"));
             candidates.push(dir.join("../../../data/data.json"));
+            candidates.push(dir.join("../../../data.json"));
         }
     }
     candidates.push(data_dir().join("data.json"));

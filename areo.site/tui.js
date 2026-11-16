@@ -626,3 +626,32 @@
     });
   });
 })();
+
+
+/* ==========================================================================
+   INSTALL TABS SWITCHER
+   ========================================================================== */
+(function () {
+  'use strict';
+  const tabs = document.querySelectorAll('.install-tab[data-install-target]');
+  const paneCargo = document.getElementById('install-pane-cargo');
+  const paneBinary = document.getElementById('install-pane-binary');
+  const copyBtn = document.getElementById('copy-btn');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.getAttribute('data-install-target');
+      if (target === 'cargo') {
+        if (paneCargo) paneCargo.style.display = 'block';
+        if (paneBinary) paneBinary.style.display = 'none';
+        if (copyBtn) copyBtn.style.display = 'flex';
+      } else {
+        if (paneCargo) paneCargo.style.display = 'none';
+        if (paneBinary) paneBinary.style.display = 'block';
+        if (copyBtn) copyBtn.style.display = 'none';
+      }
+    });
+  });
+})();
