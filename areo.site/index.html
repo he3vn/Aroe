@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <title>aroe · The terminal anime recommender that lives in your shell</title>
+  <meta content="aroe is a cozy terminal anime recommender built with Rust. No Electron, no black box algorithms, zero telemetry. Free and open source." name="description"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="site.css" rel="stylesheet"/>
+</head>
+<body id="top" tabindex="-1">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- SITE HEADER -->
+  <header class="site-header">
+    <a aria-label="aroe home" class="wordmark" href="#top">
+      <span class="logo-bolt">⚡</span>
+      <span class="logo-name">aroe</span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#questions">FAQ</a>
+      <a href="https://github.com/he3vn/Aroe" rel="noopener noreferrer" target="_blank">GitHub <span aria-hidden="true">↗</span></a>
+      <a class="button secondary nav-download" href="#install">Get aroe</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="badge-pill">
+          <span class="pill-dot"></span>
+          <span>v0.4.0 · Open Source CLI</span>
+        </div>
+
+        <h1 aria-label="Watch next." id="headline">
+          <span class="headline-visual">Watch <span class="headline-word plain-word">next.</span></span>
+        </h1>
+
+        <p>The anime recommender that lives in your terminal. Free and open source.<br class="desktop-break">Because your taste should never be a black box.</p>
+
+        <div class="hero-actions">
+          <a class="button primary" href="#install">
+            <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2v14m0 0l-5-5m5 5l5-5M4 18v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span>Download v0.4.0</span>
+          </a>
+          <a class="button secondary" href="https://github.com/he3vn/Aroe" rel="noopener noreferrer" target="_blank">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.784 1.399 8.167-7.333-3.856-7.333 3.856 1.399-8.167-5.934-5.784 8.2-1.192zm0 5.702l-2.232 4.523-4.991.726 3.612 3.521-.852 4.971 4.463-2.347 4.463 2.347-.852-4.971 3.612-3.521-4.991-.726z"/>
+            </svg>
+            <span>Star on GitHub</span>
+          </a>
+        </div>
+
+        <div class="download-requirements">
+          <span>macOS · Linux · Windows</span> · <span>Built with Rust</span>
+          <span class="download-alternatives">or run <code>cargo install aroe</code></span>
+        </div>
+      </div>
+
+      <!-- PRODUCT STAGE / MOCKUP WINDOW -->
+      <div class="product-stage">
+        <!-- SIGNAL WINGS (GOLDEN AMBER GRADIENT RIBBON) -->
+        <div aria-hidden="true" class="backdrop ribbon">
+          <svg class="signal-wings" fill="none" preserveAspectRatio="none" viewBox="0 0 1600 650">
+            <defs>
+              <linearGradient id="ribbon-gold" x1="0" y1="0" x2="800" y2="325" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fdf09b"/>
+                <stop offset=".5" stop-color="#f3d54a"/>
+                <stop offset="1" stop-color="#bc942d"/>
+              </linearGradient>
+              <linearGradient id="ribbon-surface" x2="0" y2="1">
+                <stop stop-color="#fff" stop-opacity=".25"/>
+                <stop offset=".42" stop-color="#fff" stop-opacity="0"/>
+                <stop offset="1" stop-color="#805b10" stop-opacity=".2"/>
+              </linearGradient>
+            </defs>
+            <g id="wing-left">
+              <path d="M0 0 800 325 0 130Z" fill="url(#ribbon-gold)" opacity=".65"/>
+              <path d="M0 0 800 325 0 130Z" fill="url(#ribbon-surface)"/>
+              <path d="M0 130 800 325 0 260Z" fill="url(#ribbon-gold)" opacity=".45"/>
+              <path d="M0 260 800 325 0 390Z" fill="url(#ribbon-gold)" opacity=".3"/>
+              <path d="M0 390 800 325 0 520Z" fill="url(#ribbon-gold)" opacity=".18"/>
+            </g>
+            <g id="wing-right" transform="translate(1600,0) scale(-1,1)">
+              <path d="M0 0 800 325 0 130Z" fill="url(#ribbon-gold)" opacity=".65"/>
+              <path d="M0 0 800 325 0 130Z" fill="url(#ribbon-surface)"/>
+              <path d="M0 130 800 325 0 260Z" fill="url(#ribbon-gold)" opacity=".45"/>
+              <path d="M0 260 800 325 0 390Z" fill="url(#ribbon-gold)" opacity=".3"/>
+              <path d="M0 390 800 325 0 520Z" fill="url(#ribbon-gold)" opacity=".18"/>
+            </g>
+          </svg>
+        </div>
+
+        <!-- MACOS APPLICATION WINDOW WITH LIVE RATATUI TUI -->
+        <div class="product-window demo-window">
+          <div class="demo-window-controls">
+            <div class="demo-traffic">
+              <i class="traffic-red"></i>
+              <i class="traffic-yellow"></i>
+              <i class="traffic-green"></i>
+            </div>
+            <div class="window-title">aroe — 80×24</div>
+            <div class="window-spacer"></div>
+          </div>
+
+          <!-- THE AUTHENTIC AROE TUI WORKSPACE -->
+          <div class="tui-canvas" id="tui-container" tabindex="0">
+            <!-- TUI content will be rendered here dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS SECTION -->
+    <section class="steps-section section-wrap" id="how-it-works" tabindex="-1">
+      <div class="section-heading">
+        <h2 id="steps-title">How aroe works.</h2>
+      </div>
+
+      <div class="steps-grid">
+        <!-- STEP 1 -->
+        <article class="step">
+          <div class="step-art step-art-1">
+            <div class="tui-preview-card">
+              <div class="tui-card-title">┌─ Sousou no Frieren ─────────┐</div>
+              <div class="tui-card-row active"><span class="cursor-bar">▎</span><span class="label">amazing</span><span class="key">a</span> <span class="tag">current</span></div>
+              <div class="tui-card-row"><span class="cursor-bar"> </span><span class="label">good</span><span class="key">g</span></div>
+              <div class="tui-card-row"><span class="cursor-bar"> </span><span class="label">meh</span><span class="key">m</span></div>
+              <div class="tui-card-row"><span class="cursor-bar"> </span><span class="label">bad</span><span class="key">b</span></div>
+              <div class="tui-card-title">└─────────────────────────────┘</div>
+            </div>
+          </div>
+          <div class="step-copy">
+            <span class="step-number" role="img" aria-label="Step 1">01</span>
+            <h3>Rate what you love.</h3>
+            <p>Tell it what you’ve watched with a quick score. aroe turns that into an instant taste profile without telemetry or surveys.</p>
+          </div>
+        </article>
+
+        <!-- STEP 2 -->
+        <article class="step">
+          <div class="step-art step-art-2">
+            <div class="tui-preview-card">
+              <div class="tui-card-title">┌─ Recommendations ───────────┐</div>
+              <div class="tui-card-row active"><span class="star">★</span> <span class="bold">Steins;Gate</span> <span class="badge-mini">9.1</span></div>
+              <div class="tui-card-sub">→ shared tags: Sci-Fi, Thriller</div>
+              <div class="tui-card-sub">→ matching era: 2011 · TV series</div>
+              <div class="tui-card-row"><span class="star">★</span> <span class="bold">Vinland Saga</span> <span class="badge-mini">8.8</span></div>
+              <div class="tui-card-title">└─────────────────────────────┘</div>
+            </div>
+          </div>
+          <div class="step-copy">
+            <span class="step-number" role="img" aria-label="Step 2">02</span>
+            <h3>Every pick has a reason.</h3>
+            <p>Recommendations explain themselves with shared genres, matching eras, and score proximity. No opaque black box algorithms.</p>
+          </div>
+        </article>
+
+        <!-- STEP 3 -->
+        <article class="step">
+          <div class="step-art step-art-3">
+            <div class="tui-preview-card">
+              <div class="tui-card-title">┌─ Curated Vibes ─────────────┐</div>
+              <div class="tui-card-row active"><span class="arrow">▸</span> <span class="vibe-tag">chill</span> <span class="vibe-sample">Bocchi, Spy x Family</span></div>
+              <div class="tui-card-row"><span class="arrow"> </span> <span class="vibe-tag">action</span> <span class="vibe-sample">Chainsaw Man, AOT</span></div>
+              <div class="tui-card-row"><span class="arrow"> </span> <span class="vibe-tag">deep</span> <span class="vibe-sample">Evangelion, Serial Exp</span></div>
+              <div class="tui-card-row"><span class="arrow"> </span> <span class="vibe-tag">short</span> <span class="vibe-sample">Odd Taxi, Mob Psycho</span></div>
+              <div class="tui-card-title">└─────────────────────────────┘</div>
+            </div>
+          </div>
+          <div class="step-copy">
+            <span class="step-number" role="img" aria-label="Step 3">03</span>
+            <h3>Pick a vibe in seconds.</h3>
+            <p>New to anime? Skip the long quiz. Pick a vibe — action, chill, romance, or short — and get beginner-friendly starter picks.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- PRIVACY SECTION (FOLDER METAPHOR) -->
+    <section class="privacy-section section-wrap" id="privacy" tabindex="-1">
+      <div class="privacy-copy">
+        <h2 id="privacy-title">aroe doesn’t bloat<br/>your machine.</h2>
+        <p>One compiled Rust binary with no Electron, no browser runtime, and zero background daemons. Takes less than 15 MB of memory and starts in 8 milliseconds inside whatever terminal you already love.</p>
+      </div>
+      <div class="feature-asset bench-asset" role="img" aria-label="Comparison between bloated Electron apps and aroe">
+        <div class="bench-sheet">
+          <div class="bench-row header-row">
+            <span>Runtime</span>
+            <span>RAM</span>
+            <span>Boot</span>
+          </div>
+          <div class="bench-row dim-row">
+            <div class="name-col"><span class="icon-blob">✕</span> Electron apps</div>
+            <span class="bad-num">280 MB</span>
+            <span class="bad-num">3.5 s</span>
+          </div>
+          <div class="bench-row dim-row">
+            <div class="name-col"><span class="icon-blob">✕</span> Browser tabs</div>
+            <span class="bad-num">650 MB</span>
+            <span class="bad-num">laggy</span>
+          </div>
+          <div class="bench-row highlight-row">
+            <div class="name-col"><span class="icon-bolt">⚡</span> <strong>aroe (Rust TUI)</strong></div>
+            <span class="gold-num">12 MB</span>
+            <span class="gold-num">0.01 s</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOCAL DATA SECTION (FOLDER METAPHOR) -->
+    <section class="local-section section-wrap" id="local">
+      <div class="feature-asset folder-asset" role="img" aria-label="Local filesystem layout of aroe data">
+        <div class="folder-sheet">
+          <div class="folder-header">
+            <span class="folder-path">~/.local/share/aroe/</span>
+            <span class="folder-badge">100% Offline</span>
+          </div>
+          <div class="tree-line">├── <span class="file-code">catalog.json</span> <span class="file-desc">bundled offline anime database</span></div>
+          <div class="tree-line">├── <span class="file-code">profile.json</span> <span class="file-desc">your ratings &amp; personal taste</span></div>
+          <div class="tree-line">└── <span class="file-code">cache/</span>        <span class="file-desc">instant local lookups</span></div>
+        </div>
+      </div>
+      <div class="local-copy">
+        <h2 id="local-title">Everything stays<br/>on your computer.</h2>
+        <p>Your anime ratings, watch history, and local database live as simple human-readable files on your own machine. No account, no cloud telemetry, and no public APIs hammered.</p>
+      </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section class="faq-story continuation" id="questions" tabindex="-1">
+      <div>
+        <h2 id="faq-heading">FAQ</h2>
+        <p class="faq-intro">Everything you need to know about aroe, the terminal recommender.</p>
+      </div>
+
+      <div class="faq-list">
+        <details name="aroe-faq">
+          <summary>How do I install aroe?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>You can clone the repository and build with Cargo (<code>git clone https://github.com/he3vn/Aroe &amp;&amp; cargo build --release</code>) or download prebuilt standalone binaries from the GitHub releases page for macOS, Linux, and Windows.</p>
+        </details>
+        <details name="aroe-faq">
+          <summary>Does it work offline?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>Yes. The entire anime catalog is bundled directly into the application data. Once installed, search, vibe selection, and the recommender engine work completely offline without an internet connection.</p>
+        </details>
+        <details name="aroe-faq">
+          <summary>Where does the anime catalog come from?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>The offline dataset is powered by the open-source Anime Offline Database (manami-project). When you view rich details, aroe optionally fetches additional synopsis information from AniList and caches it locally.</p>
+        </details>
+        <details name="aroe-faq">
+          <summary>What terminal emulators are supported?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>aroe runs on any modern terminal emulator with truecolor support, including Ghostty, Alacritty, Kitty, iTerm2, WezTerm, Windows Terminal, and macOS Terminal.app.</p>
+        </details>
+        <details name="aroe-faq">
+          <summary>How does the recommendation algorithm work?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>It calculates weighted genre and theme vectors based on your ratings (Amazing = +2.0, Good = +1.0, Meh = +0.2, Bad = -1.5) with TF-IDF penalty for ubiquitous tags, era proximity, and type preferences. It is 100% deterministic and runs in microseconds.</p>
+        </details>
+        <details name="aroe-faq">
+          <summary>Is aroe free and open source?<span aria-hidden="true" class="faq-plus">+</span></summary>
+          <p>Yes. aroe is 100% free and open-source under the MIT license. You can inspect every line of code, modify it, or contribute back on GitHub.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- INSTALL / CODE SECTION -->
+    <section class="install-section section-wrap" id="install">
+      <div class="install-box">
+        <div class="install-header">
+          <span>Quick Install</span>
+          <button class="copy-button" id="copy-btn" title="Copy to clipboard">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <span>Copy</span>
+          </button>
+        </div>
+        <pre><code>git clone https://github.com/he3vn/Aroe
+cd Aroe
+cargo run --release</code></pre>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER FOLDER DESIGN (1:1 with yogurt.so) -->
+  <footer class="site-footer">
+    <div class="footer-folder-tab">
+      <span class="folder-tab-label">⚡ aroe · terminal anime recommender</span>
+    </div>
+    <div class="footer-main">
+      <div class="footer-brand">
+        <div>
+          <p>The terminal anime recommender.<br/>Free and open source.</p>
+          <a class="button secondary footer-download" href="https://github.com/he3vn/Aroe/releases/latest">
+            <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2v14m0 0l-5-5m5 5l5-5M4 18v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span>Download for macOS / Linux</span>
+          </a>
+          <span class="download-requirements">
+            <span>Rust 1.80+</span> · <span>Zero Electron</span>
+            <span class="download-alternatives">Source on <a href="https://github.com/he3vn/Aroe" target="_blank" rel="noopener">GitHub</a></span>
+          </span>
+        </div>
+      </div>
+      <div class="footer-column">
+        <h3>aroe</h3>
+        <a href="#how-it-works">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#questions">FAQ</a>
+      </div>
+      <div class="footer-column">
+        <h3>Open source</h3>
+        <a href="https://github.com/he3vn/Aroe" rel="noopener noreferrer" target="_blank">Source code ↗</a>
+        <a href="https://github.com/he3vn/Aroe/releases" rel="noopener noreferrer" target="_blank">Releases ↗</a>
+        <a href="https://github.com/he3vn/Aroe/blob/main/LICENSE" rel="noopener noreferrer" target="_blank">MIT License ↗</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 aroe · Built with Rust</span>
+      <div class="footer-credits">
+        <span>assets from pinterest · database by <a href="https://github.com/manami-project/anime-offline-database" target="_blank" rel="noopener">manami</a></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="tui.js"></script>
+</body>
+</html>
