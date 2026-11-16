@@ -35,14 +35,14 @@ case "$OS" in
     BINARY_NAME="aroe-linux"
     ;;
   *)
-    echo "❌ Unsupported operating system: $OS"
-    echo "For Windows, download 'aroe-windows.exe' directly from:"
+    echo "error: unsupported operating system: $OS"
+    echo "for windows, download aroe-windows.exe from:"
     echo "https://github.com/he3vn/Aroe/releases/latest"
     exit 1
     ;;
 esac
 
-echo "→ Detected OS: $OS ($ARCH)"
+echo "-> detected: $OS ($ARCH)"
 
 # 2. Determine installation directories
 INSTALL_DIR="$HOME/.local/bin"
@@ -53,14 +53,14 @@ mkdir -p "$DATA_DIR"
 
 # 3. Download the executable binary from latest GitHub release
 DOWNLOAD_URL="https://github.com/he3vn/Aroe/releases/latest/download/${BINARY_NAME}"
-echo "→ Downloading latest aroe binary for $TARGET..."
+echo "-> downloading latest aroe binary for $TARGET..."
 
 if command -v curl >/dev/null 2>&1; then
   curl -sSL -f "$DOWNLOAD_URL" -o "$INSTALL_DIR/aroe"
 elif command -v wget >/dev/null 2>&1; then
   wget -q "$DOWNLOAD_URL" -O "$INSTALL_DIR/aroe"
 else
-  echo "❌ Neither curl nor wget was found. Please install either to continue."
+  echo "error: neither curl nor wget was found."
   exit 1
 fi
 
@@ -69,7 +69,7 @@ chmod +x "$INSTALL_DIR/aroe"
 # 4. Download default anime catalog data so it works 100% offline
 CATALOG_URL="https://raw.githubusercontent.com/he3vn/Aroe/main/data.json"
 if [ ! -f "$DATA_DIR/data.json" ]; then
-  echo "→ Downloading offline anime catalog database (~60MB)..."
+  echo "-> downloading offline catalog database (~60MB)..."
   if command -v curl >/dev/null 2>&1; then
     curl -sSL -f "$CATALOG_URL" -o "$DATA_DIR/data.json" || true
   elif command -v wget >/dev/null 2>&1; then
@@ -79,7 +79,7 @@ fi
 
 # 5. Check PATH
 echo ""
-echo -e "${GOLD}⚡ aroe was successfully installed to: $INSTALL_DIR/aroe${RESET}"
+echo -e "${GOLD}aroe installed to: $INSTALL_DIR/aroe${RESET}"
 
 if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
   SHELL_NAME="$(basename "$SHELL")"

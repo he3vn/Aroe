@@ -286,26 +286,26 @@
         <!-- PANE 1: 1-LINE CURL INSTALLER -->
         <div id="install-pane-curl">
           <pre><code>curl -fsSL https://raw.githubusercontent.com/he3vn/Aroe/main/install.sh | bash</code></pre>
-          <p class="install-note">Works on <strong>macOS</strong> and <strong>Linux</strong>. Automatically detects your OS, installs <code>aroe</code> to <code>~/.local/bin</code>, and sets up the offline catalog.</p>
+          <p class="install-note">macOS &amp; Linux. Installs to <code>~/.local/bin/aroe</code>.</p>
         </div>
 
         <!-- PANE 2: PREBUILT BINARIES -->
         <div id="install-pane-binary" style="display: none;">
           <div class="install-binary-grid">
             <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-macos" target="_blank" rel="noopener">
-              <span>🍏 macOS</span>
-              <span class="binary-sub">Run: chmod +x &amp; ./aroe-macos</span>
+              <span>macOS</span>
+              <span class="binary-sub">chmod +x &amp; ./aroe-macos</span>
             </a>
             <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-linux" target="_blank" rel="noopener">
-              <span>🐧 Linux</span>
-              <span class="binary-sub">Run: chmod +x &amp; ./aroe-linux</span>
+              <span>Linux</span>
+              <span class="binary-sub">chmod +x &amp; ./aroe-linux</span>
             </a>
             <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-windows.exe" target="_blank" rel="noopener">
-              <span>🪟 Windows</span>
-              <span class="binary-sub">Double-click .exe to run</span>
+              <span>Windows</span>
+              <span class="binary-sub">run aroe-windows.exe</span>
             </a>
           </div>
-          <p class="install-note">No Rust, compilers, or developer tools required. Direct standalone executables from GitHub Releases.</p>
+          <p class="install-note">No compilers or tools needed. Download and run.</p>
         </div>
 
         <!-- PANE 3: CARGO BUILD -->
@@ -313,7 +313,7 @@
           <pre><code>git clone https://github.com/he3vn/Aroe
 cd Aroe
 cargo run --release</code></pre>
-          <p class="install-note">Requires <a href="https://rustup.rs" target="_blank" rel="noopener">Rust &amp; Cargo</a>. Loads catalog data automatically from <code>./data.json</code>.</p>
+          <p class="install-note">Requires <a href="https://rustup.rs" target="_blank" rel="noopener">Rust</a>. Loads catalog from <code>./data.json</code>.</p>
         </div>
       </div>
     </section>
