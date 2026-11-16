@@ -41,15 +41,51 @@
 
 ## installation
 
+### Option 1 : Installation rapide en une ligne (macOS et Linux)
+
+Le moyen le plus simple d'installer et d'exécuter `aroe` sans avoir besoin de Rust :
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/he3vn/Aroe/main/install.sh | bash
+```
+
+Une fois installé, lance simplement :
+```bash
+aroe
+```
+
+---
+
+### Option 2 : Exécutable autonome (sans Rust)
+
+Télécharge directement le binaire compilé pour ton système depuis les [Releases GitHub](https://github.com/he3vn/Aroe/releases/latest) :
+
+* **🍏 macOS (`aroe-macos`)** :
+  ```bash
+  cd ~/Downloads
+  chmod +x aroe-macos
+  ./aroe-macos
+  ```
+
+* **🐧 Linux (`aroe-linux`)** :
+  ```bash
+  cd ~/Downloads
+  chmod +x aroe-linux
+  ./aroe-linux
+  ```
+
+* **🪟 Windows (`aroe-windows.exe`)** :
+  Double-clique sur `aroe-windows.exe` ou lance-le dans le Terminal Windows.
+
+---
+
+### Option 3 : Compiler depuis les sources (Cargo)
+
+Si tu as déjà [Rust](https://www.rust-lang.org/fr/tools/install) installé :
+
 ```bash
 git clone https://github.com/he3vn/Aroe
 cd Aroe
-cargo build --release
-```
-
-puis lance-le :
-
-```bash
 cargo run --release
 ```
 

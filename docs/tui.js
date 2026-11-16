@@ -634,8 +634,9 @@
 (function () {
   'use strict';
   const tabs = document.querySelectorAll('.install-tab[data-install-target]');
-  const paneCargo = document.getElementById('install-pane-cargo');
+  const paneCurl = document.getElementById('install-pane-curl');
   const paneBinary = document.getElementById('install-pane-binary');
+  const paneCargo = document.getElementById('install-pane-cargo');
   const copyBtn = document.getElementById('copy-btn');
 
   tabs.forEach(tab => {
@@ -643,15 +644,32 @@
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const target = tab.getAttribute('data-install-target');
-      if (target === 'cargo') {
-        if (paneCargo) paneCargo.style.display = 'block';
-        if (paneBinary) paneBinary.style.display = 'none';
-        if (copyBtn) copyBtn.style.display = 'flex';
-      } else {
-        if (paneCargo) paneCargo.style.display = 'none';
-        if (paneBinary) paneBinary.style.display = 'block';
-        if (copyBtn) copyBtn.style.display = 'none';
-      }
+
+      if (paneCurl) paneCurl.style.display = target === 'curl' ? 'block' : 'none';
+      if (paneBinary) paneBinary.style.display = target === 'binary' ? 'block' : 'none';
+      if (paneCargo) paneCargo.style.display = target === 'cargo' ? 'block' : 'none';
+      if (copyBtn) copyBtn.style.display = target === 'binary' ? 'none' : 'flex';
     });
   });
+
+  // Update copy button to copy whatever command is active
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      const activeTab = document.querySelector('.install-tab.active');
+      const target = activeTab ? activeTab.getAttribute('data-install-target') : 'curl';
+      let code = 'curl -fsSL https://raw.githubusercontent.com/he3vn/Aroe/main/install.sh | bash';
+      if (target === 'cargo') {
+        code = 'git clone https://github.com/he3vn/Aroe\ncd Aroe\ncargo run --release';
+      }
+      navigator.clipboard.writeText(code).then(() => {
+        copyBtn.innerHTML = '<span>✓ Copied!</span>';
+        setTimeout(() => {
+          copyBtn.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <span>Copy</span>
+          `;
+        }, 1500);
+      });
+    });
+  }
 })();

@@ -273,8 +273,9 @@
       <div class="install-box">
         <div class="install-header">
           <div class="install-tabs">
-            <span class="install-tab active" data-install-target="cargo">Build with Cargo</span>
-            <span class="install-tab" data-install-target="binary">Prebuilt Binary (No Rust)</span>
+            <span class="install-tab active" data-install-target="curl">1-Line Install</span>
+            <span class="install-tab" data-install-target="binary">Prebuilt Binaries</span>
+            <span class="install-tab" data-install-target="cargo">Build with Cargo</span>
           </div>
           <button class="copy-button" id="copy-btn" title="Copy to clipboard">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -282,31 +283,37 @@
           </button>
         </div>
 
-        <!-- PANE 1: CARGO BUILD -->
-        <div id="install-pane-cargo">
+        <!-- PANE 1: 1-LINE CURL INSTALLER -->
+        <div id="install-pane-curl">
+          <pre><code>curl -fsSL https://raw.githubusercontent.com/he3vn/Aroe/main/install.sh | bash</code></pre>
+          <p class="install-note">Works on <strong>macOS</strong> and <strong>Linux</strong>. Automatically detects your OS, installs <code>aroe</code> to <code>~/.local/bin</code>, and sets up the offline catalog.</p>
+        </div>
+
+        <!-- PANE 2: PREBUILT BINARIES -->
+        <div id="install-pane-binary" style="display: none;">
+          <div class="install-binary-grid">
+            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-macos" target="_blank" rel="noopener">
+              <span>🍏 macOS</span>
+              <span class="binary-sub">Run: chmod +x &amp; ./aroe-macos</span>
+            </a>
+            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-linux" target="_blank" rel="noopener">
+              <span>🐧 Linux</span>
+              <span class="binary-sub">Run: chmod +x &amp; ./aroe-linux</span>
+            </a>
+            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/download/v1.0.0/aroe-windows.exe" target="_blank" rel="noopener">
+              <span>🪟 Windows</span>
+              <span class="binary-sub">Double-click .exe to run</span>
+            </a>
+          </div>
+          <p class="install-note">No Rust, compilers, or developer tools required. Direct standalone executables from GitHub Releases.</p>
+        </div>
+
+        <!-- PANE 3: CARGO BUILD -->
+        <div id="install-pane-cargo" style="display: none;">
           <pre><code>git clone https://github.com/he3vn/Aroe
 cd Aroe
 cargo run --release</code></pre>
           <p class="install-note">Requires <a href="https://rustup.rs" target="_blank" rel="noopener">Rust &amp; Cargo</a>. Loads catalog data automatically from <code>./data.json</code>.</p>
-        </div>
-
-        <!-- PANE 2: PREBUILT BINARY (NO RUST NEEDED) -->
-        <div id="install-pane-binary" style="display: none;">
-          <div class="install-binary-grid">
-            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/latest" target="_blank" rel="noopener">
-              <span>🍏 macOS</span>
-              <span class="binary-sub">Apple Silicon / Intel</span>
-            </a>
-            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/latest" target="_blank" rel="noopener">
-              <span>🐧 Linux</span>
-              <span class="binary-sub">x86_64 standalone</span>
-            </a>
-            <a class="binary-btn" href="https://github.com/he3vn/Aroe/releases/latest" target="_blank" rel="noopener">
-              <span>🪟 Windows</span>
-              <span class="binary-sub">.exe executable</span>
-            </a>
-          </div>
-          <p class="install-note">No Rust, compilers, or developer tools required. Just download the executable for your OS and run it.</p>
         </div>
       </div>
     </section>
